@@ -192,10 +192,6 @@ nav::-webkit-scrollbar{display:none;}
         <div class="lr"><input type="checkbox" id="c1"><label for="c1"><div class="ld" style="background:#b8d4a0;border:1px solid #4a7a38;"></div> Topokort</label></div>
         <div class="lr"><input type="checkbox" id="c4" checked><label for="c4"><div class="ld" style="background:rgba(200,60,160,.5);border:2px solid #a010a0;border-radius:50%;"></div> Jagtareal</label></div>
         <div class="lr"><input type="checkbox" id="c5" checked><label for="c5"><div class="ld" style="background:#4a90d9;border-radius:50%;"></div> Min position</label></div>
-        <div style="margin-top:8px;display:flex;gap:4px;">
-          <button onclick="startAreaEdit('nord')" style="flex:1;padding:6px;background:rgba(170,24,160,.2);border:1px solid #aa18a0;border-radius:7px;color:#f0b0e0;font-size:10px;cursor:pointer;">✏️ Nord</button>
-          <button onclick="startAreaEdit('syd')" style="flex:1;padding:6px;background:rgba(170,24,160,.2);border:1px solid #aa18a0;border-radius:7px;color:#f0b0e0;font-size:10px;cursor:pointer;">✏️ Syd</button>
-        </div>
         <div id="area-btns" style="margin-top:4px;display:flex;flex-direction:column;gap:4px;"></div>
         <button onclick="startDrawNewArea()" style="width:100%;margin-top:5px;padding:7px;background:rgba(212,168,67,.1);border:1px dashed rgba(212,168,67,.4);border-radius:8px;color:var(--gold);font-size:11px;cursor:pointer;">＋ Nyt areal</button>
       </div>
@@ -318,8 +314,6 @@ nav::-webkit-scrollbar{display:none;}
     <div class="card">
       <div class="card-title">🗺️ Jagtarealer</div>
       <div id="admin-areas">
-        <div style="font-size:13px;color:var(--text2);padding:4px 0;">🟣 Nordstykket — <button onclick="startAreaEdit('nord')" style="background:none;border:none;color:var(--gold);font-size:12px;cursor:pointer;">✏️ Rediger</button></div>
-        <div style="font-size:13px;color:var(--text2);padding:4px 0;">🟣 Sydstykket — <button onclick="startAreaEdit('syd')" style="background:none;border:none;color:var(--gold);font-size:12px;cursor:pointer;">✏️ Rediger</button></div>
         <div id="admin-extra-areas"></div>
       </div>
       <button onclick="startDrawNewArea()" style="width:100%;margin-top:10px;padding:12px;background:rgba(212,168,67,.1);border:1px dashed rgba(212,168,67,.4);border-radius:10px;color:var(--gold);font-family:var(--fl),serif;font-size:13px;cursor:pointer;">＋ Tegn nyt jagtareal</button>
@@ -562,7 +556,7 @@ const ANIMAL_EMOJI = {
 let DB = { stands:{}, kills:{}, hunts:{}, members:{}, chat:{}, activity:[], vagtplan:{}, kvoter:{} };
 let stands = [], kills = [], hunts = [];
 let firebaseLoaded = false;
-let nextStandId = 11;
+let nextStandId = 1;
 let currentUser = null;
 let activeChatChannel = 'alle';
 let editingMember = null;
@@ -668,7 +662,7 @@ function loadCache(){
 }
 
 function populateArrays(){
-  const incoming = Object.values(DB.stands||{});
+  const incoming = Object.values(DB.stands||{}).filter(Boolean);
   incoming.forEach(s=>{
     const ex = stands.find(e=>e.id===s.id);
     if(ex){ ex.name=s.name; ex.lat=s.lat; ex.lng=s.lng; ex.booking=s.booking; }
@@ -785,12 +779,6 @@ async function initFirebase(){
     if(extraR && extraR.ok){ const d=await extraR.json(); if(d&&typeof d==='object') extraAreas=d; }
   }catch(e){ console.error('Firebase error:', e.message); }
 
-  if(!Object.keys(DB.stands||{}).length){
-    const ds={};
-    for(let i=1;i<=10;i++) ds[i]={id:i,name:'Torn '+i,lat:null,lng:null,booking:null};
-    DB.stands=ds; DB.nextStandId=11;
-    await fbWrite('stands',ds); await fbWrite('nextStandId',11);
-  }
   if(!nordPoints) nordPoints=nord.map(p=>({lat:p[0],lng:p[1]}));
   if(!sydPoints) sydPoints=syd.map(p=>({lat:p[0],lng:p[1]}));
 
@@ -870,8 +858,8 @@ function initMap(){
   map  = L.map('map',{layers:[lOSM],zoomControl:false});
 }
 
-const nord=[[56.3526,10.7742],[56.3526,10.7862],[56.3486,10.7862],[56.3486,10.7742]];
-const syd=[[56.3446,10.7742],[56.3446,10.7862],[56.3406,10.7862],[56.3406,10.7742]];
+const nord=[];
+const syd=[];
 
 const aStyle={color:'#aa18a0',weight:2.5,fillColor:'#dd60cc',fillOpacity:0.28};
 let ag;
@@ -889,8 +877,9 @@ function initMapLayers(){
     else placingStand.marker.setLatLng([placingStand.lat,placingStand.lng]);
     updMarker(placingStand);
     saveOneSt(placingStand);
+    const pn=placingStand.name;
     cancelPlace();
-    toast('✅ '+placingStand.name+' placeret!');
+    toast('✅ '+pn+' placeret!');
   });
 
   ['c0','c1'].forEach(id=>{
@@ -925,8 +914,8 @@ function redrawAllAreas(){
   ag.clearLayers();
   const pts=(nordPoints||nord.map(p=>({lat:p[0],lng:p[1]})));
   const spts=(sydPoints||syd.map(p=>({lat:p[0],lng:p[1]})));
-  L.polygon(pts.map(p=>[p.lat,p.lng]),aStyle).bindTooltip('Nordstykket',{permanent:true,direction:'center',className:'att'}).addTo(ag);
-  L.polygon(spts.map(p=>[p.lat,p.lng]),aStyle).bindTooltip('Sydstykket',{permanent:true,direction:'center',className:'att'}).addTo(ag);
+  if(pts.length>=3) L.polygon(pts.map(p=>[p.lat,p.lng]),aStyle).bindTooltip('Nordstykket',{permanent:true,direction:'center',className:'att'}).addTo(ag);
+  if(spts.length>=3) L.polygon(spts.map(p=>[p.lat,p.lng]),aStyle).bindTooltip('Sydstykket',{permanent:true,direction:'center',className:'att'}).addTo(ag);
   Object.values(extraAreas||{}).forEach(area=>{
     if(!area||!area.points||area.points.length<3) return;
     const c=area.color||'#4a90d9';
@@ -1176,12 +1165,7 @@ function beginDrawNewArea(){
   document.getElementById('area-bar-name').textContent='Tegner: '+newAreaName;
   showView('kort');
   setTimeout(function(){
-    if(map){
-      map.dragging.disable();
-      if(map.touchZoom) map.touchZoom.disable();
-      if(map.scrollWheelZoom) map.scrollWheelZoom.disable();
-      map.on('click',drawNewAreaClick);
-    }
+    if(map) map.invalidateSize();
   }, map ? 0 : 300);
   const lp=document.getElementById('lp-b');
   if(lp.style.display!=='none') toggleLP();
@@ -1503,7 +1487,8 @@ async function saveNewStand(){
   await fbWrite('nextStandId',nextStandId);
   closeModal('add-stand-modal');
   renderTårne();
-  toast('✅ '+name+' oprettet!');
+  toast('✅ '+name+' oprettet — tryk på kortet for at placere det');
+  placeTorn(id);
 }
 
 function openTårneEdit(id){
