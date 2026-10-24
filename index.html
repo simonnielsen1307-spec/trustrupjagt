@@ -553,7 +553,21 @@ nav::-webkit-scrollbar{display:none;}
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────
-const FB = 'https://dystrup-jagt-default-rtdb.europe-west1.firebasedatabase.app/trustrup';
+const FB_CANDIDATES = [
+  'https://trustrup-jagt-default-rtdb.europe-west1.firebasedatabase.app/trustrup',
+  'https://trustrup-jagt-default-rtdb.firebaseio.com/trustrup'
+];
+let FB = FB_CANDIDATES[0];
+async function resolveFB(){
+  try{ const c=localStorage.getItem('tj_fb'); if(c&&FB_CANDIDATES.includes(c)){ FB=c; return; } }catch(e){}
+  for(const u of FB_CANDIDATES){
+    try{
+      const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),6000);
+      const r=await fetch(u+'.json?shallow=true',{signal:ctrl.signal}); clearTimeout(t);
+      if(r.ok){ FB=u; try{localStorage.setItem('tj_fb',u);}catch(e){} return; }
+    }catch(e){}
+  }
+}
 
 const DEFAULT_MEMBERS = {
   'Simon':  { hash:'7d33501fa15e45b40f00c9df0d9b60d0b5c68debec8e1c0236ffe74ba3a1af7b', admin:true  },
@@ -865,6 +879,7 @@ function afterLogin(){
 
 // ── INIT ─────────────────────────────────────────────────────────
 async function initFirebase(){
+  await resolveFB();
   setTimeout(startGPS,2000);
 
   setTimeout(()=>{
