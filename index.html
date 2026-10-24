@@ -7,29 +7,33 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Trustrup">
+<meta name="theme-color" content="#111311">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>Hunting Trustrup</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{
-  --bg:#080f08;--bg2:#0f1a0f;--bg3:#162316;--bg4:#1c2e1c;
-  --gold:#d4a843;--gold2:#f0c866;--gold3:#b08830;
-  --green:#3d7a52;--green2:#1e4a2e;--green3:#2a6040;
-  --pink:#e060d0;--red:#9a2525;--red2:#6a1515;
-  --text:#f4ede0;--text2:#9ab89a;--text3:#4a6a4a;
-  --border:rgba(212,168,67,.2);--border2:rgba(212,168,67,.08);
+  --bg:#111311;--bg2:#171a17;--bg3:#1d211d;--bg4:#262b26;
+  --gold:#ff7a1a;--gold2:#ff9a4d;--gold3:#d9600a;
+  --green:#78b478;--green2:#24331f;--green3:#34502f;
+  --pink:#ff5c5c;--red:#b33a3a;--red2:#5a1f1f;
+  --text:#e8ebe6;--text2:#b4bab2;--text3:#858c84;
+  --border:#2c322c;--border2:#232823;
   --shadow:0 8px 32px rgba(0,0,0,.6);
-  --fp:'Playfair Display';--fl:'Lora';
+  --fp:'Barlow Condensed';--fl:'Barlow';
 }
 html,body{height:100%;margin:0;padding:0;}
-body{font-family:'Lora',Georgia,serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;}
+body{font-family:'Barlow',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;}
 
 /* HEADER */
-header{background:rgba(8,15,8,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
-.logo{font-family:var(--fp),serif;font-size:16px;color:var(--gold);letter-spacing:1px;}
-.user-badge{position:absolute;right:10px;font-size:11px;color:var(--gold);padding:5px 12px;border:1px solid rgba(212,168,67,.3);border-radius:20px;cursor:pointer;background:rgba(212,168,67,.08);white-space:nowrap;}
+header{background:rgba(17,19,17,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.logo{font-family:var(--fp),sans-serif;font-size:16px;color:var(--gold);letter-spacing:1px;}
+.user-badge{position:absolute;right:10px;font-size:11px;color:var(--gold);padding:5px 12px;border:1px solid rgba(255,122,26,.3);border-radius:20px;cursor:pointer;background:rgba(255,122,26,.08);white-space:nowrap;}
 .search-btn{position:absolute;left:10px;background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:8px;line-height:1;}
 
 /* APP wrapper - position fixed fylder altid hele skærmen */
@@ -44,63 +48,63 @@ main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;padd
 .view.active{display:flex;}
 .view-inner{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:12px 14px 20px;min-height:0;}
 .view-header{padding:12px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.view-header h2{font-family:var(--fp),serif;font-size:20px;color:var(--gold);}
+.view-header h2{font-family:var(--fp),sans-serif;font-size:20px;color:var(--gold);}
 
 /* NAV */
-nav{position:fixed;bottom:0;left:0;right:0;z-index:2000;background:rgba(8,15,8,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;height:62px;padding-bottom:env(safe-area-inset-bottom);transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:2000;background:rgba(17,19,17,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;height:62px;padding-bottom:env(safe-area-inset-bottom);transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
 nav.hidden{transform:translateY(100%);}
-.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:var(--text3);cursor:pointer;font-family:var(--fl),serif;position:relative;border-top:2px solid transparent;transition:all .2s;}
-.nav-tab.active{color:var(--gold);border-top-color:var(--gold);background:linear-gradient(180deg,rgba(212,168,67,.08),transparent);}
+.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:var(--text3);cursor:pointer;font-family:var(--fl),sans-serif;position:relative;border-top:2px solid transparent;transition:all .2s;}
+.nav-tab.active{color:var(--gold);border-top-color:var(--gold);background:linear-gradient(180deg,rgba(255,122,26,.08),transparent);}
 .nav-tab .ti{font-size:20px;line-height:1;margin-bottom:2px;}
 .nav-tab .tl{font-size:9px;font-weight:500;}
 
 /* NAV TOGGLE */
 #nav-toggle{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:2001;transition:bottom .4s cubic-bezier(.34,1.56,.64,1);}
 #nav-toggle.up{bottom:62px;}
-.nav-pill{background:rgba(8,15,8,.85);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:6px 24px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;}
-.nav-pill-bar{width:32px;height:3px;background:rgba(212,168,67,.4);border-radius:2px;transition:transform .3s;}
+.nav-pill{background:rgba(17,19,17,.85);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:6px 24px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.nav-pill-bar{width:32px;height:3px;background:rgba(255,122,26,.4);border-radius:2px;transition:transform .3s;}
 
 /* MORE MENU */
-#more-menu{display:none;position:fixed;bottom:62px;left:0;right:0;background:rgba(10,18,10,.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(212,168,67,.3);border-radius:24px 24px 0 0;z-index:3000;padding:8px 0;box-shadow:0 -8px 40px rgba(0,0,0,.8);}
+#more-menu{display:none;position:fixed;bottom:62px;left:0;right:0;background:rgba(14,16,14,.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,122,26,.3);border-radius:24px 24px 0 0;z-index:3000;padding:8px 0;box-shadow:0 -8px 40px rgba(0,0,0,.8);}
 .more-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px;}
-.more-btn{background:rgba(22,35,22,.6);border:1px solid rgba(212,168,67,.1);border-radius:16px;color:var(--text2);font-family:var(--fl),serif;cursor:pointer;padding:12px 4px;text-align:center;transition:all .2s;}
-.more-btn.active,.more-btn:active{background:rgba(212,168,67,.1);color:var(--gold);border-color:rgba(212,168,67,.4);}
+.more-btn{background:rgba(29,33,29,.6);border:1px solid rgba(255,122,26,.1);border-radius:16px;color:var(--text2);font-family:var(--fl),sans-serif;cursor:pointer;padding:12px 4px;text-align:center;transition:all .2s;}
+.more-btn.active,.more-btn:active{background:rgba(255,122,26,.1);color:var(--gold);border-color:rgba(255,122,26,.4);}
 
 /* CARDS */
 .card{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,67,.25),transparent);}
-.card-title{font-family:var(--fp),serif;font-size:17px;color:var(--gold);margin-bottom:8px;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,122,26,.25),transparent);}
+.card-title{font-family:var(--fp),sans-serif;font-size:17px;color:var(--gold);margin-bottom:8px;}
 
 /* BUTTONS */
-.btn{border:none;border-radius:12px;padding:14px 12px;font-family:var(--fl),serif;font-size:15px;cursor:pointer;font-weight:600;flex:1;}
-.btn-g{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg);box-shadow:0 4px 15px rgba(212,168,67,.3);}
+.btn{border:none;border-radius:12px;padding:14px 12px;font-family:var(--fl),sans-serif;font-size:15px;cursor:pointer;font-weight:600;flex:1;}
+.btn-g{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg);box-shadow:0 4px 15px rgba(255,122,26,.3);}
 .btn-q{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
-.btn-add{background:linear-gradient(135deg,var(--green2),var(--green3));border:1px solid rgba(61,122,82,.5);border-radius:20px;color:var(--text);padding:9px 18px;font-family:var(--fl),serif;font-size:13px;cursor:pointer;}
+.btn-add{background:linear-gradient(135deg,var(--green2),var(--green3));border:1px solid rgba(61,122,82,.5);border-radius:20px;color:var(--text);padding:9px 18px;font-family:var(--fl),sans-serif;font-size:13px;cursor:pointer;}
 .modal-btns{display:flex;gap:10px;margin-top:16px;}
 
 /* MODALS */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:3000;display:none;align-items:flex-end;justify-content:center;}
 .overlay.open{display:flex;}
-.modal{background:linear-gradient(180deg,var(--bg3),var(--bg2));border:1px solid rgba(212,168,67,.4);border-radius:28px 28px 0 0;padding:24px 20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-.modal h3{font-family:var(--fp),serif;font-size:19px;color:var(--gold);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.modal{background:linear-gradient(180deg,var(--bg3),var(--bg2));border:1px solid rgba(255,122,26,.4);border-radius:28px 28px 0 0;padding:24px 20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.modal h3{font-family:var(--fp),sans-serif;font-size:19px;color:var(--gold);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;}
-.field input,.field select,.field textarea{width:100%;padding:13px 15px;background:rgba(8,15,8,.5);border:1px solid rgba(212,168,67,.15);border-radius:12px;color:var(--text);font-family:var(--fl),serif;font-size:16px;}
+.field input,.field select,.field textarea{width:100%;padding:13px 15px;background:rgba(17,19,17,.5);border:1px solid rgba(255,122,26,.15);border-radius:12px;color:var(--text);font-family:var(--fl),sans-serif;font-size:16px;}
 .field textarea{min-height:80px;resize:vertical;}
 
 /* TOAST */
-.toast-el{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(15,26,15,.96);color:var(--gold);padding:10px 22px;border-radius:28px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 0 1px rgba(212,168,67,.2);backdrop-filter:blur(16px);white-space:nowrap;}
+.toast-el{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(23,26,23,.96);color:var(--gold);padding:10px 22px;border-radius:28px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 0 1px rgba(255,122,26,.2);backdrop-filter:blur(16px);white-space:nowrap;}
 
 /* MAP */
-#map{width:100%;height:100%;z-index:1;background:#1a2a1a;}
-.tm{background:var(--gold);border:2px solid rgba(0,0,0,.4);border-radius:20px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:var(--bg);font-family:var(--fp),serif;padding:4px 8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);}
+#map{width:100%;height:100%;z-index:1;background:#1d211d;}
+.tm{background:var(--gold);border:2px solid rgba(0,0,0,.4);border-radius:20px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:var(--bg);font-family:var(--fp),sans-serif;padding:4px 8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);}
 .tm.bk{background:var(--pink);}
 .tm.sel{background:var(--gold2);box-shadow:0 0 0 3px white,0 2px 8px rgba(0,0,0,.4);}
-.att{background:rgba(0,0,0,.6)!important;color:white!important;border:none!important;font-family:var(--fp),serif!important;font-size:12px!important;padding:3px 8px!important;border-radius:8px!important;}
+.att{background:rgba(0,0,0,.6)!important;color:white!important;border:none!important;font-family:var(--fp),sans-serif!important;font-size:12px!important;padding:3px 8px!important;border-radius:8px!important;}
 
 /* KORTLAG */
-#lp{position:absolute;top:10px;left:10px;z-index:1000;background:rgba(8,15,8,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;min-width:160px;overflow:hidden;}
-#lp-h{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;font-size:13px;color:var(--gold);font-family:var(--fp),serif;}
+#lp{position:absolute;top:10px;left:10px;z-index:1000;background:rgba(17,19,17,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;min-width:160px;overflow:hidden;}
+#lp-h{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;font-size:13px;color:var(--gold);font-family:var(--fp),sans-serif;}
 #lp-b{padding:6px 12px 10px;}
 .lr{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:var(--text2);}
 .lr input{width:16px;height:16px;cursor:pointer;accent-color:var(--gold);}
@@ -109,18 +113,18 @@ nav.hidden{transform:translateY(100%);}
 #lp-b .lr{padding:3px 0;}
 
 /* STAND PANEL */
-#mb{position:absolute;bottom:12px;left:12px;right:12px;z-index:1000;background:rgba(8,15,8,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:none;font-size:13px;color:var(--text2);}
+#mb{position:absolute;bottom:12px;left:12px;right:12px;z-index:1000;background:rgba(17,19,17,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:none;font-size:13px;color:var(--text2);}
 
 /* FIND ME */
-#findme-btn{position:absolute;bottom:60px;right:12px;z-index:1000;background:rgba(8,15,8,.9);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;color:var(--gold);padding:10px 12px;font-size:20px;cursor:pointer;line-height:1;}
+#findme-btn{position:absolute;bottom:60px;right:12px;z-index:1000;background:rgba(17,19,17,.9);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;color:var(--gold);padding:10px 12px;font-size:20px;cursor:pointer;line-height:1;}
 
 /* LOGIN */
-#login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#080f08,#0f2a0f,#1a3a1a,#0f1a0f);}
-.login-box{width:100%;max-width:380px;background:linear-gradient(160deg,rgba(22,35,22,.95),rgba(15,26,15,.98));border:1px solid rgba(212,168,67,.3);border-radius:28px;padding:36px 28px;box-shadow:0 20px 60px rgba(0,0,0,.8);}
+#login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(120% 80% at 50% 0%,#24201a 0%,#111311 60%);}
+.login-box{width:100%;max-width:380px;background:linear-gradient(160deg,rgba(29,33,29,.95),rgba(23,26,23,.98));border:1px solid rgba(255,122,26,.3);border-radius:28px;padding:36px 28px;box-shadow:0 20px 60px rgba(0,0,0,.8);}
 .login-field{margin-bottom:14px;}
 .login-field label{display:block;font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;}
-.login-field select,.login-field input{width:100%;padding:14px 16px;background:rgba(8,15,8,.6);border:1px solid rgba(212,168,67,.2);border-radius:12px;color:var(--text);font-family:var(--fl),serif;font-size:16px;}
-.login-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:14px;font-family:var(--fp),serif;font-size:17px;font-weight:700;color:var(--bg);cursor:pointer;margin-top:16px;letter-spacing:.5px;}
+.login-field select,.login-field input{width:100%;padding:14px 16px;background:rgba(17,19,17,.6);border:1px solid rgba(255,122,26,.2);border-radius:12px;color:var(--text);font-family:var(--fl),sans-serif;font-size:16px;}
+.login-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:14px;font-family:var(--fp),sans-serif;font-size:17px;font-weight:700;color:var(--bg);cursor:pointer;margin-top:16px;letter-spacing:.5px;}
 
 /* AREA EDIT BAR */
 #area-bar{display:none;position:absolute;top:0;left:0;right:0;z-index:1001;background:rgba(10,5,15,.95);backdrop-filter:blur(16px);border-bottom:1px solid rgba(170,24,160,.4);padding:env(safe-area-inset-top) 12px 10px;padding-top:max(env(safe-area-inset-top), 44px);align-items:center;flex-wrap:wrap;gap:8px;}
@@ -128,21 +132,34 @@ nav.hidden{transform:translateY(100%);}
 /* MISC */
 .hidden{display:none!important;}
 .empty{text-align:center;color:var(--text3);font-style:italic;padding:40px 20px;font-size:14px;}
-.tag{display:inline-block;background:rgba(22,35,22,.8);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--text2);margin:2px;}
+.tag{display:inline-block;background:rgba(29,33,29,.8);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--text2);margin:2px;}
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--gold),var(--gold3));border-radius:2px;}
 nav::-webkit-scrollbar{display:none;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes gpsPulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(3);opacity:0}}
+
+/* TEMA C – Nat & signal */
+.logo,.view-header h2,.card-title,.modal h3,#lp-h{text-transform:uppercase;letter-spacing:1px;font-weight:700;}
+.logo{display:flex;align-items:center;gap:8px;font-size:18px;color:var(--text);}
+.card{border-radius:16px;}
+.btn,.login-btn,.btn-add{font-weight:700;letter-spacing:.3px;}
+.login-btn{background:var(--gold)!important;color:#111311!important;font-family:var(--fp),sans-serif;text-transform:uppercase;letter-spacing:1px;}
+.nav-tab.active{color:var(--gold)!important;border-top-color:var(--gold)!important;}
+.quick-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.quick-btn{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:16px;border-radius:16px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:var(--fp),sans-serif;font-size:19px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;}
+.quick-btn.primary{background:var(--gold);border-color:var(--gold);color:#111311;}
+.quick-btn svg{width:24px;height:24px;}
+.hm{background:#4ea3ff;color:#fff;border:2px solid #fff;border-radius:14px;font:700 11px Barlow,sans-serif;padding:3px 7px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5);}
 </style>
 </head>
 <body>
 
 <!-- SPLASH -->
 <div id="splash" style="position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-  <div style="font-size:72px;">🦌</div>
-  <div style="font-family:var(--fp),serif;font-size:28px;color:var(--gold);margin-top:16px;">Trustrup</div>
-  <div style="font-size:13px;color:var(--text3);margin-top:4px;">Jagtkonsortet</div>
+  <svg viewBox="0 0 64 64" width="96" height="96" role="img" aria-label="Hunting Trustrup"><path d="M32 3 L58 14 V32 C58 47 46 57 32 61 C18 57 6 47 6 32 V14 Z" fill="#1d211d" stroke="#ff7a1a" stroke-width="3"/><text x="32" y="41" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="700" font-size="24" fill="#e8ebe6" letter-spacing="1">HT</text></svg>
+  <div style="font-family:var(--fp),sans-serif;font-size:30px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-top:16px;">Hunting Trustrup</div>
+  <div style="font-size:13px;color:var(--text3);margin-top:4px;">Jagtselskab</div>
   <div style="margin-top:40px;width:48px;height:3px;background:var(--gold);border-radius:2px;opacity:.6;"></div>
 </div>
 
@@ -150,8 +167,8 @@ nav::-webkit-scrollbar{display:none;}
 <div id="login-screen">
   <div class="login-box">
     <div style="text-align:center;margin-bottom:24px;">
-      <div style="font-size:52px;">🦌</div>
-      <div style="font-family:var(--fp),serif;font-size:22px;color:var(--gold);margin-top:8px;">Hunting Trustrup</div>
+      <div style="display:flex;justify-content:center;"><svg viewBox="0 0 64 64" width="72" height="72" role="img" aria-label="Hunting Trustrup"><path d="M32 3 L58 14 V32 C58 47 46 57 32 61 C18 57 6 47 6 32 V14 Z" fill="#1d211d" stroke="#ff7a1a" stroke-width="3"/><text x="32" y="41" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="700" font-size="24" fill="#e8ebe6" letter-spacing="1">HT</text></svg></div>
+      <div style="font-family:var(--fp),sans-serif;font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-top:10px;">Hunting Trustrup</div>
       <div style="font-size:13px;color:var(--text3);margin-top:4px;">Log ind for at fortsætte</div>
     </div>
     <div class="login-field"><label>Jæger</label>
@@ -170,7 +187,7 @@ nav::-webkit-scrollbar{display:none;}
 
 <header>
   <button class="search-btn" onclick="openSearch()">🔍</button>
-  <div class="logo">🦌 Trustrup</div>
+  <div class="logo"><svg viewBox="0 0 64 64" width="28" height="28" role="img" aria-label="Hunting Trustrup"><path d="M32 3 L58 14 V32 C58 47 46 57 32 61 C18 57 6 47 6 32 V14 Z" fill="#1d211d" stroke="#ff7a1a" stroke-width="3"/><text x="32" y="41" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="700" font-size="24" fill="#e8ebe6" letter-spacing="1">HT</text></svg> Trustrup</div>
   <span class="user-badge" id="user-badge" onclick="openUserMenu()">👤</span>
 </header>
 
@@ -196,7 +213,7 @@ nav::-webkit-scrollbar{display:none;}
         <div class="lr"><input type="checkbox" id="c4" checked><label for="c4"><div class="ld" style="background:rgba(200,60,160,.5);border:2px solid #a010a0;border-radius:50%;"></div> Jagtareal</label></div>
         <div class="lr"><input type="checkbox" id="c5" checked><label for="c5"><div class="ld" style="background:#4a90d9;border-radius:50%;"></div> Min position</label></div>
         <div id="area-btns" style="margin-top:4px;display:flex;flex-direction:column;gap:4px;"></div>
-        <button onclick="startDrawNewArea()" style="width:100%;margin-top:5px;padding:7px;background:rgba(212,168,67,.1);border:1px dashed rgba(212,168,67,.4);border-radius:8px;color:var(--gold);font-size:11px;cursor:pointer;">＋ Nyt areal</button>
+        <button onclick="startDrawNewArea()" style="width:100%;margin-top:5px;padding:7px;background:rgba(255,122,26,.1);border:1px dashed rgba(255,122,26,.4);border-radius:8px;color:var(--gold);font-size:11px;cursor:pointer;">＋ Nyt areal</button>
       </div>
     </div>
     <div id="area-bar">
@@ -234,7 +251,7 @@ nav::-webkit-scrollbar{display:none;}
     <button class="btn-add" onclick="openKillModal()">＋ Registrer</button>
   </div>
   <div style="padding:8px 14px;border-bottom:1px solid var(--border2);flex-shrink:0;">
-    <input type="text" id="kill-search" placeholder="🔍 Søg jæger, dyr, torn..." oninput="renderKills()" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;color:var(--text);font-family:var(--fl),serif;font-size:14px;">
+    <input type="text" id="kill-search" placeholder="🔍 Søg jæger, dyr, torn..." oninput="renderKills()" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;color:var(--text);font-family:var(--fl),sans-serif;font-size:14px;">
   </div>
   <div class="view-inner" id="kill-list"></div>
 </div>
@@ -246,8 +263,8 @@ nav::-webkit-scrollbar{display:none;}
     <button class="btn-add" onclick="openModal('hunt-modal')">＋ Tilføj</button>
   </div>
   <div style="padding:8px 14px;border-bottom:1px solid var(--border2);display:flex;gap:8px;flex-shrink:0;">
-    <button id="jagt-liste-btn" onclick="setJagtView('liste')" style="flex:1;padding:9px;background:var(--gold);color:var(--bg);border:none;border-radius:10px;font-family:var(--fl),serif;font-size:13px;font-weight:700;cursor:pointer;">📋 Liste</button>
-    <button id="jagt-kal-btn" onclick="setJagtView('kalender')" style="flex:1;padding:9px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:10px;font-family:var(--fl),serif;font-size:13px;cursor:pointer;">🗓 Kalender</button>
+    <button id="jagt-liste-btn" onclick="setJagtView('liste')" style="flex:1;padding:9px;background:var(--gold);color:var(--bg);border:none;border-radius:10px;font-family:var(--fl),sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📋 Liste</button>
+    <button id="jagt-kal-btn" onclick="setJagtView('kalender')" style="flex:1;padding:9px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:10px;font-family:var(--fl),sans-serif;font-size:13px;cursor:pointer;">🗓 Kalender</button>
   </div>
   <div class="view-inner" id="hunt-list"></div>
 </div>
@@ -261,13 +278,13 @@ nav::-webkit-scrollbar{display:none;}
 <!-- CHAT -->
 <div class="view" id="v-chat" style="flex-direction:column;">
   <div style="background:var(--bg);border-bottom:1px solid var(--border2);padding:8px 12px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch;">
-    <button id="chat-alle-btn" onclick="switchChat('alle')" style="background:var(--gold);color:var(--bg);border:none;border-radius:20px;padding:7px 14px;font-family:var(--fl),serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">👥 Alle</button>
+    <button id="chat-alle-btn" onclick="switchChat('alle')" style="background:var(--gold);color:var(--bg);border:none;border-radius:20px;padding:7px 14px;font-family:var(--fl),sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">👥 Alle</button>
     <div id="chat-private-tabs" style="display:flex;gap:6px;"></div>
   </div>
   <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch;min-height:0;"></div>
   <div style="padding:10px 12px;border-top:1px solid var(--border2);display:flex;gap:8px;flex-shrink:0;background:var(--bg);">
-    <input type="text" id="chat-input" placeholder="Skriv en besked..." style="flex:1;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:24px;color:var(--text);font-family:var(--fl),serif;font-size:14px;">
-    <button onclick="sendChat()" style="background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:24px;padding:12px 20px;color:var(--bg);font-family:var(--fl),serif;font-weight:700;font-size:14px;cursor:pointer;">Send</button>
+    <input type="text" id="chat-input" placeholder="Skriv en besked..." style="flex:1;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:24px;color:var(--text);font-family:var(--fl),sans-serif;font-size:14px;">
+    <button onclick="sendChat()" style="background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:24px;padding:12px 20px;color:var(--bg);font-family:var(--fl),sans-serif;font-weight:700;font-size:14px;cursor:pointer;">Send</button>
   </div>
 </div>
 
@@ -293,9 +310,9 @@ nav::-webkit-scrollbar{display:none;}
 <div class="view" id="v-stat">
   <div class="view-header"><h2>📊 Statistik</h2></div>
   <div style="padding:8px 14px;border-bottom:1px solid var(--border2);display:flex;gap:6px;flex-shrink:0;">
-    <button id="stat-btn-0" onclick="setStatYear(0)" style="flex:1;padding:8px;background:var(--gold);color:var(--bg);border:none;border-radius:8px;font-family:var(--fl),serif;font-size:12px;font-weight:700;cursor:pointer;">I år</button>
-    <button id="stat-btn-1" onclick="setStatYear(1)" style="flex:1;padding:8px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:8px;font-family:var(--fl),serif;font-size:12px;cursor:pointer;">I fjor</button>
-    <button id="stat-btn--1" onclick="setStatYear(-1)" style="flex:1;padding:8px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:8px;font-family:var(--fl),serif;font-size:12px;cursor:pointer;">Alle år</button>
+    <button id="stat-btn-0" onclick="setStatYear(0)" style="flex:1;padding:8px;background:var(--gold);color:var(--bg);border:none;border-radius:8px;font-family:var(--fl),sans-serif;font-size:12px;font-weight:700;cursor:pointer;">I år</button>
+    <button id="stat-btn-1" onclick="setStatYear(1)" style="flex:1;padding:8px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:8px;font-family:var(--fl),sans-serif;font-size:12px;cursor:pointer;">I fjor</button>
+    <button id="stat-btn--1" onclick="setStatYear(-1)" style="flex:1;padding:8px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:8px;font-family:var(--fl),sans-serif;font-size:12px;cursor:pointer;">Alle år</button>
   </div>
   <div class="view-inner" id="stat-content"></div>
 </div>
@@ -319,13 +336,13 @@ nav::-webkit-scrollbar{display:none;}
       <div id="admin-areas">
         <div id="admin-extra-areas"></div>
       </div>
-      <button onclick="startDrawNewArea()" style="width:100%;margin-top:10px;padding:12px;background:rgba(212,168,67,.1);border:1px dashed rgba(212,168,67,.4);border-radius:10px;color:var(--gold);font-family:var(--fl),serif;font-size:13px;cursor:pointer;">＋ Tegn nyt jagtareal</button>
+      <button onclick="startDrawNewArea()" style="width:100%;margin-top:10px;padding:12px;background:rgba(255,122,26,.1);border:1px dashed rgba(255,122,26,.4);border-radius:10px;color:var(--gold);font-family:var(--fl),sans-serif;font-size:13px;cursor:pointer;">＋ Tegn nyt jagtareal</button>
     </div>
     <div class="card">
       <div class="card-title">🛠️ Værktøjer</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
-        <button onclick="exportKillsCSV()" style="padding:13px;background:var(--green2);border:1px solid var(--green);border-radius:10px;color:var(--text);font-family:var(--fl),serif;font-size:14px;cursor:pointer;text-align:left;">📊 Eksporter skydelog (CSV)</button>
-        <button onclick="rydGamleData()" style="padding:13px;background:var(--red2);border:1px solid var(--red);border-radius:10px;color:#f4d0d0;font-family:var(--fl),serif;font-size:14px;cursor:pointer;text-align:left;">🗑 Ryd data ældre end 1 år</button>
+        <button onclick="exportKillsCSV()" style="padding:13px;background:var(--green2);border:1px solid var(--green);border-radius:10px;color:var(--text);font-family:var(--fl),sans-serif;font-size:14px;cursor:pointer;text-align:left;">📊 Eksporter skydelog (CSV)</button>
+        <button onclick="rydGamleData()" style="padding:13px;background:var(--red2);border:1px solid var(--red);border-radius:10px;color:#f4d0d0;font-family:var(--fl),sans-serif;font-size:14px;cursor:pointer;text-align:left;">🗑 Ryd data ældre end 1 år</button>
       </div>
     </div>
     <div class="card">
@@ -503,10 +520,11 @@ nav::-webkit-scrollbar{display:none;}
 <!-- Bruger menu -->
 <div class="overlay" id="user-modal">
 <div class="modal">
-  <div id="user-modal-name" style="font-family:var(--fp),serif;font-size:16px;color:var(--gold);margin-bottom:16px;text-align:center;padding-bottom:12px;border-bottom:1px solid var(--border);"></div>
+  <div id="user-modal-name" style="font-family:var(--fp),sans-serif;font-size:16px;color:var(--gold);margin-bottom:16px;text-align:center;padding-bottom:12px;border-bottom:1px solid var(--border);"></div>
   <div style="display:flex;flex-direction:column;gap:10px;">
-    <button onclick="closeModal('user-modal');openModal('changepass-modal');" style="padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;color:var(--text);font-family:var(--fl),serif;font-size:15px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🔑</span> Skift adgangskode</button>
-    <button onclick="doLogout();" style="padding:16px;background:rgba(154,37,37,.2);border:1px solid var(--red);border-radius:14px;color:#f4a0a0;font-family:var(--fl),serif;font-size:15px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🚪</span> Log ud</button>
+    <button onclick="closeModal('user-modal');openModal('changepass-modal');" style="padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;color:var(--text);font-family:var(--fl),sans-serif;font-size:15px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🔑</span> Skift adgangskode</button>
+    <button id="notify-btn" onclick="closeModal('user-modal');notifyOn()?disableNotify():enableNotify();" style="padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;color:var(--text);font-family:var(--fl),sans-serif;font-size:15px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🔔</span> Slå beskeder til</button>
+    <button onclick="doLogout();" style="padding:16px;background:rgba(154,37,37,.2);border:1px solid var(--red);border-radius:14px;color:#f4a0a0;font-family:var(--fl),sans-serif;font-size:15px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🚪</span> Log ud</button>
   </div>
 </div></div>
 
@@ -514,7 +532,7 @@ nav::-webkit-scrollbar{display:none;}
 <div class="overlay" id="search-modal" onclick="closeModal('search-modal')">
 <div class="modal" onclick="event.stopPropagation()">
   <div style="display:flex;gap:8px;margin-bottom:14px;">
-    <input type="text" id="search-input" placeholder="🔍 Søg overalt..." oninput="doSearch()" style="flex:1;padding:13px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;color:var(--text);font-family:var(--fl),serif;font-size:16px;">
+    <input type="text" id="search-input" placeholder="🔍 Søg overalt..." oninput="doSearch()" style="flex:1;padding:13px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;color:var(--text);font-family:var(--fl),sans-serif;font-size:16px;">
     <button onclick="closeModal('search-modal')" style="padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:14px;cursor:pointer;">✕</button>
   </div>
   <div id="search-results"><div class="empty">Skriv for at søge...</div></div>
@@ -576,6 +594,110 @@ let gpsMarker = null, gpsWatcher = null;
 let loginAttempts = 0, loginBlocked = false;
 let navVisible = true;
 let editingKillId = null;
+
+// ── GPS TJEK IND & DELT POSITION ──────────────────────────────
+let lastPos=null, lastShare=0, otherPos={}, posMarkers={};
+function distM(a,b){const R=6371000,r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lng-a.lng)*r;
+  const x=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+function getPosOnce(){
+  return new Promise(res=>{
+    if(lastPos&&Date.now()-lastPos.ts<60000) return res(lastPos);
+    if(!navigator.geolocation) return res(null);
+    navigator.geolocation.getCurrentPosition(p=>{lastPos={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy,ts:Date.now()};res(lastPos);},
+      ()=>res(null),{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
+  });
+}
+async function quickCheckin(){
+  const mine=stands.find(s=>s.booking&&s.booking.hunter===currentUser);
+  if(mine){ openCheckin(mine.id); return; }
+  const placed=stands.filter(s=>s.lat&&s.lng);
+  if(!placed.length){ toast('Ingen tårne placeret på kortet endnu'); return; }
+  toast('📍 Finder din position...');
+  const p=await getPosOnce();
+  if(!p){ toast('⛔ Tillad lokation for at tjekke ind med GPS'); showView('Tårne'); return; }
+  const near=placed.map(s=>({s,d:distM(p,s)})).sort((a,b)=>a.d-b.d)[0];
+  if(near.d>300){ toast('Intet tårn inden for 300 m (nærmeste: '+near.s.name+', '+Math.round(near.d)+' m)'); showView('Tårne'); return; }
+  openCheckin(near.s.id);
+}
+function sharePosition(force){
+  const mine=stands.find(s=>s.booking&&s.booking.hunter===currentUser);
+  if(!currentUser||!lastPos) return;
+  if(!mine) return;
+  if(!force&&Date.now()-lastShare<60000) return;
+  lastShare=Date.now();
+  fbWrite('positions/'+encodeURIComponent(currentUser),{user:currentUser,lat:lastPos.lat,lng:lastPos.lng,stand:mine.name,ts:Date.now()});
+}
+function stopSharing(){ if(currentUser) fbWrite('positions/'+encodeURIComponent(currentUser),null); }
+function drawPositions(){
+  if(!map) return;
+  const now=Date.now();
+  Object.values(otherPos||{}).forEach(p=>{
+    if(!p||p.user===currentUser) return;
+    const fresh=now-p.ts<15*60000;
+    const m=posMarkers[p.user];
+    if(!fresh){ if(m){map.removeLayer(m);delete posMarkers[p.user];} return; }
+    const mins=Math.max(0,Math.round((now-p.ts)/60000));
+    const html='<div class="hm">'+p.user+(mins?' · '+mins+' min':'')+'</div>';
+    if(m){ m.setLatLng([p.lat,p.lng]); m.setIcon(L.divIcon({className:'',html,iconAnchor:[20,12]})); }
+    else posMarkers[p.user]=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html,iconAnchor:[20,12]}),interactive:false}).addTo(map);
+  });
+  Object.keys(posMarkers).forEach(u=>{ if(!otherPos[u]&&!Object.values(otherPos).find(p=>p&&p.user===u)){ map.removeLayer(posMarkers[u]); delete posMarkers[u]; } });
+}
+
+// ── KVOTER ─────────────────────────────────────────────────────
+function seasonRange(saeson){
+  const y=parseInt(String(saeson||'').slice(0,4))||new Date().getFullYear();
+  return [y+'-04-01',(y+1)+'-03-31'];
+}
+function currentSeason(){ const d=new Date(),y=d.getMonth()<3?d.getFullYear()-1:d.getFullYear(); return y+'/'+(y+1); }
+function kvoteStatus(k){
+  const [a,b]=seasonRange(k.saeson);
+  const harvested=kills.filter(x=>x.animal===k.animal&&x.date&&x.date>=a&&x.date<=b).length;
+  return {harvested,rest:Math.max(0,(k.antal||0)-harvested),over:harvested>(k.antal||0)};
+}
+function kvoteSummaryHtml(){
+  const cur=currentSeason().slice(0,4);
+  const ks=Object.values(DB.kvoter||{}).filter(k=>k&&String(k.saeson||'').slice(0,4)===cur);
+  if(!ks.length) return '';
+  let h='<div class="card" onclick="showView(\'kvoter\')" style="cursor:pointer;"><div class="card-title">Kvoter '+currentSeason()+'</div><div style="display:flex;flex-wrap:wrap;gap:8px;">';
+  ks.forEach(k=>{const st=kvoteStatus(k);const c=st.rest===0?'var(--pink)':st.rest<=1?'var(--gold)':'var(--green)';
+    h+='<div style="flex:1;min-width:90px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px;"><div style="font-size:12px;color:var(--text3);">'+k.animal+'</div><div style="font-family:var(--fp),sans-serif;font-size:24px;font-weight:700;color:'+c+';">'+st.rest+' <span style="font-size:13px;color:var(--text3);font-weight:500;">tilbage</span></div></div>';});
+  return h+'</div></div>';
+}
+
+// ── BESKEDER (notifikationer) ──────────────────────────────────
+let swReg=null, notifySeen={chat:null,hunts:null,kills:null};
+function notifyOn(){ try{ return localStorage.getItem('tj_notify')==='1' && 'Notification' in window && Notification.permission==='granted'; }catch(e){ return false; } }
+async function enableNotify(){
+  if(!('Notification' in window)){ toast('Din telefon understøtter ikke beskeder her. På iPhone: føj appen til hjemmeskærmen først.'); return; }
+  const p=await Notification.requestPermission();
+  if(p==='granted'){ try{localStorage.setItem('tj_notify','1');}catch(e){} toast('🔔 Beskeder slået til'); notify('Hunting Trustrup','Du får nu besked om nye jagter, vildt og chat.'); }
+  else toast('Beskeder blev ikke tilladt');
+  updateNotifyBtn();
+}
+function disableNotify(){ try{localStorage.setItem('tj_notify','0');}catch(e){} toast('🔕 Beskeder slået fra'); updateNotifyBtn(); }
+function updateNotifyBtn(){ const b=document.getElementById('notify-btn'); if(b) b.innerHTML='<span style="font-size:22px;">'+(notifyOn()?'🔕':'🔔')+'</span> '+(notifyOn()?'Slå beskeder fra':'Slå beskeder til'); }
+function notify(title,body){
+  toast(body,4000);
+  if(!notifyOn()) return;
+  try{
+    if(swReg&&swReg.showNotification) swReg.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png',tag:title+body});
+    else new Notification(title,{body,icon:'icon-192.png'});
+  }catch(e){}
+}
+function checkNews(kind,data){
+  const ids=Object.keys(data||{});
+  if(notifySeen[kind]===null){ notifySeen[kind]=new Set(ids); return; }
+  ids.forEach(id=>{
+    if(notifySeen[kind].has(id)) return;
+    notifySeen[kind].add(id);
+    const v=data[id]; if(!v) return;
+    if(kind==='chat'&&v.user!==currentUser) notify('Ny besked fra '+v.user,(v.text||'').slice(0,120));
+    if(kind==='hunts'&&v.createdBy!==currentUser) notify('Ny jagt oprettet',(v.type||'Jagt')+' '+fmtDMY(v.date)+(v.time?' kl. '+v.time:''));
+    if(kind==='kills'&&v.hunter!==currentUser) notify('Vildt nedlagt',v.hunter+' har nedlagt '+(v.animal||'vildt')+(v.weight?' · '+v.weight+' kg':''));
+  });
+}
+function fmtDMY(d){ if(!d) return ''; const p=d.split('-'); return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:d; }
 
 // ── UTILS ────────────────────────────────────────────────────────
 function toast(msg, dur=2500){
@@ -673,7 +795,7 @@ function populateArrays(){
   });
   stands = stands.filter(s=>incoming.find(i=>i.id===s.id));
   stands.sort((a,b)=>a.id-b.id);
-  kills = Object.values(DB.kills||{}).sort((a,b)=>(b.id||0)-(a.id||0));
+  kills = Object.values(DB.kills||{}).filter(Boolean).sort((a,b)=>(b.id||0)-(a.id||0));
   hunts = Object.values(DB.hunts||{}).filter(x=>x&&x.date).sort((a,b)=>a.date.localeCompare(b.date));
 }
 
@@ -727,7 +849,11 @@ function doLogout(){
   });
 }
 
+function registerSW(){
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(r=>{swReg=r;}).catch(()=>{}); }
+}
 function afterLogin(){
+  registerSW(); setTimeout(updateNotifyBtn,0);
   var crown = isAdmin()?' 👑':'';
   document.getElementById('user-badge').textContent='👤 '+currentUser+crown;
   if(isAdmin()){
@@ -1022,6 +1148,8 @@ function startGPS(){
 
 function gpsPos(pos){
   const lat=pos.coords.latitude, lng=pos.coords.longitude;
+  lastPos={lat,lng,acc:pos.coords.accuracy,ts:Date.now()};
+  sharePosition();
   if(!map) return;
   if(!gpsMarker){
     const ic=L.divIcon({className:'',html:'<div style="position:relative;width:20px;height:20px;"><div style="position:absolute;inset:-8px;background:rgba(74,144,217,.2);border-radius:50%;animation:gpsPulse 2s ease-out infinite;"></div><div style="position:absolute;inset:0;background:#4a90d9;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div></div>',iconSize:[20,20],iconAnchor:[10,10]});
@@ -1335,20 +1463,24 @@ function renderDashboard(){
   let h='';
 
   if(DB.adminMsg&&DB.adminMsg.text){
-    h+='<div style="background:linear-gradient(135deg,#2a1a0a,#3a2a0a);border:2px solid var(--gold);border-radius:14px;padding:14px;margin-bottom:12px;">';
+    h+='<div style="background:linear-gradient(135deg,#2a1a0e,#3a240e);border:2px solid var(--gold);border-radius:14px;padding:14px;margin-bottom:12px;">';
     h+='<div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:4px;">📢 VIGTIG BESKED</div>';
     h+='<div style="font-size:14px;">'+DB.adminMsg.text+'</div></div>';
   }
 
   h+='<div style="text-align:center;padding:6px 0 12px;">';
-  h+='<div style="font-size:20px;color:var(--gold);">God jagt, '+currentUser+'! 🦌</div>';
+  h+='<div style="font-family:var(--fp),sans-serif;font-size:26px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">God jagt, '+currentUser+'</div>';
   h+='<div style="font-size:12px;color:var(--text3);margin-top:3px;">'+now.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long'})+'</div>';
   h+='</div>';
 
-  h+='<div id="dash-weather" style="background:linear-gradient(135deg,#182818,#1e3a1e);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:14px;min-height:80px;">';
+  h+='<div id="dash-weather" style="background:linear-gradient(135deg,#1d211d,#262b26);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:14px;min-height:80px;">';
   h+='<div style="font-size:36px;">🌤️</div><div style="flex:1;"><div style="font-size:22px;font-weight:700;color:var(--gold);">...</div><div style="font-size:12px;color:var(--text3);">Henter vejr...</div></div>';
   h+='<div style="text-align:right;font-size:11px;color:var(--text3);">🌄 --:--<br>🌇 --:--</div></div>';
 
+  const mine=stands.find(s=>s.booking&&s.booking.hunter===currentUser);
+  h+='<div class="quick-row"><button class="quick-btn primary" onclick="openKillModal()"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v4M12 18v4M2 12h4M18 12h4\"/></svg>Meld nedlagt</button>'+
+    '<button class="quick-btn" onclick="quickCheckin()"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 21L10 9M17 21L14 9M6 9h12M8 4h8l1 5H7z\"/></svg>'+(mine?'Tjek ud':'Tjek ind')+'</button></div>';
+  h+=kvoteSummaryHtml();
   const occ=stands.filter(s=>s.booking);
   const free=stands.filter(s=>s.lat&&!s.booking);
   h+='<div class="card"><div class="card-title">🌲 Tårne</div>';
@@ -1395,7 +1527,7 @@ function renderDashboard(){
 
   const unread=Object.values(DB.chat||{}).filter(m=>m.user!==currentUser&&!m.read).length;
   if(unread>0){
-    h+='<div onclick="showView(\'chat\');closeMore();" style="background:linear-gradient(135deg,#1a2a1a,#1e3a1e);border:1px solid var(--green);border-radius:16px;padding:14px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:12px;">';
+    h+='<div onclick="showView(\'chat\');closeMore();" style="background:linear-gradient(135deg,#1d211d,#262b26);border:1px solid var(--green);border-radius:16px;padding:14px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:12px;">';
     h+='<div style="font-size:28px;">💬</div><div style="flex:1;"><div style="font-size:14px;font-weight:600;">'+unread+' ulæst'+(unread>1?'e':'')+' besked'+(unread>1?'er':'')+'</div></div>';
     h+='<div style="background:#c8302a;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">'+unread+'</div></div>';
   }
@@ -1589,6 +1721,7 @@ async function doCheckin(){
   if(s.booking&&(s.booking.hunter===currentUser||isAdmin())){
     s.booking=null;
     DB.stands[s.id]=s;
+    stopSharing();
     await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,booking:null});
     updMarker(s);
     renderTårne();
@@ -1598,6 +1731,7 @@ async function doCheckin(){
   } else if(!s.booking){
     s.booking={hunter:currentUser,time};
     DB.stands[s.id]=s;
+    getPosOnce().then(()=>sharePosition(true));
     await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,booking:{hunter:currentUser,time}});
     updMarker(s);
     if('vibrate' in navigator) navigator.vibrate([100,50,100]);
@@ -1641,6 +1775,10 @@ async function saveKill(){
       r.readAsDataURL(photoFile);
     });
   }
+  if(!editingKillId){
+    const kv=Object.values(DB.kvoter||{}).find(q=>q&&q.animal===animal&&date>=seasonRange(q.saeson)[0]&&date<=seasonRange(q.saeson)[1]);
+    if(kv&&kvoteStatus(kv).rest<=0&&!confirm('Kvoten for '+animal+' er opbrugt ('+kv.antal+'). Registrér alligevel?')) return;
+  }
   const id=editingKillId||Date.now();
   const k={id,animal,hunter,standId,date,weight:weight?parseFloat(weight):null,note,photo};
   if(!DB.kills) DB.kills={};
@@ -1651,6 +1789,8 @@ async function saveKill(){
   renderKills();
   logActivity(currentUser+' registrerede '+animal+(weight?' ('+weight+'kg)':''));
   toast('✅ '+animal+' registreret!');
+  const kv2=Object.values(DB.kvoter||{}).find(q=>q&&q.animal===animal&&date>=seasonRange(q.saeson)[0]&&date<=seasonRange(q.saeson)[1]);
+  if(kv2){ const st=kvoteStatus(kv2); setTimeout(()=>toast(st.rest===0?'⚠️ Kvoten for '+animal+' er nu opbrugt':animal+': '+st.rest+' tilbage af kvoten',3500),2600); }
 }
 
 function renderKills(){
@@ -1783,7 +1923,7 @@ async function saveHunt(){
   const note=document.getElementById('h-note').value.trim();
   if(!date){toast('Vælg en dato');return;}
   const id='h_'+Date.now();
-  const h={id,date,type,note,signups:[]};
+  const h={createdBy:currentUser,id,date,type,note,signups:[]};
   if(!DB.hunts) DB.hunts={};
   DB.hunts[id]=h;
   hunts=Object.values(DB.hunts).filter(x=>x&&x.date).sort((a,b)=>a.date.localeCompare(b.date));
@@ -1981,12 +2121,12 @@ function renderKvoter(){
   const kvoter=Object.values(DB.kvoter||{});
   if(!kvoter.length){el.innerHTML='<div class="empty">Ingen kvoter oprettet.</div>';return;}
   el.innerHTML=kvoter.map(k=>{
-    const harvested=kills.filter(x=>x.animal===k.animal).length;
+    const st=kvoteStatus(k), harvested=st.harvested;
     const pct=Math.min(100,Math.round(harvested/Math.max(1,k.antal)*100));
     const delBtn=isAdmin()?'<button onclick="deleteKvote(\''+k.id+'\')" style="float:right;padding:4px 8px;background:var(--red2);border:1px solid var(--red);border-radius:6px;color:#f4d0d0;font-size:11px;cursor:pointer;">🗑</button>':'';
     return '<div class="card">'+delBtn+
       '<div class="card-title" style="margin-bottom:6px;">'+k.animal+' - '+k.saeson+'</div>'+
-      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span>Nedlagt: '+harvested+'</span><span>Kvote: '+k.antal+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:8px;"><span>Nedlagt: '+harvested+' af '+k.antal+'</span><span style="font-family:var(--fp),sans-serif;font-size:22px;font-weight:700;color:'+(st.rest===0?'var(--pink)':st.rest<=1?'var(--gold)':'var(--green)')+';">'+(st.rest===0?'OPBRUGT':st.rest+' tilbage')+'</span></div>'+
       '<div style="background:var(--bg3);border-radius:8px;height:14px;overflow:hidden;"><div style="width:'+pct+'%;background:linear-gradient(90deg,var(--green),var(--gold));height:100%;border-radius:8px;transition:width 1s;"></div></div>'+
       '<div style="font-size:11px;color:var(--text3);margin-top:4px;text-align:right;">'+pct+'%</div></div>';
   }).join('');
@@ -2079,7 +2219,7 @@ function renderMembers(){
     '<div style="flex:1;"><div style="font-size:15px;font-weight:700;">'+name+'</div><div style="font-size:11px;color:var(--text3);">'+(m.admin?'Administrator':'Jæger')+'</div></div></div>'+
     '<div style="display:flex;gap:6px;flex-wrap:wrap;">'+
     '<button onclick="editMember(\''+name+'\')" style="flex:1;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;cursor:pointer;">✏️ Skift kode</button>'+
-    '<button onclick="resetMemberPass(\''+name+'\')" style="flex:1;padding:10px;background:rgba(212,168,67,.1);border:1px solid var(--border);border-radius:10px;color:var(--gold);font-size:13px;cursor:pointer;">🔑 Nulstil</button>'+
+    '<button onclick="resetMemberPass(\''+name+'\')" style="flex:1;padding:10px;background:rgba(255,122,26,.1);border:1px solid var(--border);border-radius:10px;color:var(--gold);font-size:13px;cursor:pointer;">🔑 Nulstil</button>'+
     (name!==currentUser?'<button onclick="deleteMember(\''+name+'\')" style="padding:10px 14px;background:var(--red2);border:1px solid var(--red);border-radius:10px;color:#f4d0d0;font-size:13px;cursor:pointer;">🗑</button>':'')
     +'</div></div>'
   ).join('');
@@ -2235,6 +2375,20 @@ window.addEventListener('resize', function(){
 });
 
 function startPolling(){
+  checkNews('chat',DB.chat); checkNews('hunts',DB.hunts); checkNews('kills',DB.kills);
+  setInterval(function(){
+    Promise.all([fetch(FB+'/hunts.json').then(r=>r.ok?r.json():null).catch(()=>null),
+                 fetch(FB+'/kills.json').then(r=>r.ok?r.json():null).catch(()=>null),
+                 fetch(FB+'/positions.json').then(r=>r.ok?r.json():null).catch(()=>null)]).then(function(res){
+      var hd=res[0], kd=res[1], pd=res[2];
+      if(hd&&JSON.stringify(hd)!==JSON.stringify(DB.hunts)){ checkNews('hunts',hd); DB.hunts=hd; populateArrays();
+        if(document.getElementById('v-jagt').classList.contains('active')) renderHunts();
+        if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard(); }
+      if(kd&&typeof kd==='object'&&JSON.stringify(Object.keys(kd))!==JSON.stringify(Object.keys(DB.kills||{}))){ checkNews('kills',kd); DB.kills=kd; populateArrays();
+        if(document.getElementById('v-log').classList.contains('active')) renderKills(); }
+      otherPos=pd||{}; drawPositions();
+    });
+  },30000);
   setInterval(function(){
     fetch(FB+'/chat.json').then(function(r){
       if(!r.ok) return;
@@ -2243,6 +2397,7 @@ function startPolling(){
       if(!d) return;
       var changed = JSON.stringify(d)!==JSON.stringify(DB.chat);
       if(!changed) return;
+      checkNews('chat',d);
       DB.chat=d;
       var unread=Object.values(d).filter(function(m){return m.user!==currentUser&&!m.read;}).length;
       var badge=document.getElementById('chat-badge');
