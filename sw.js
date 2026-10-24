@@ -1,4 +1,4 @@
-const CACHE = 'trustrup-v3';
+const CACHE = 'trustrup-v4';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -12,7 +12,12 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || e.request.url.includes('firebasedatabase')) return;
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  const same = new URL(e.request.url).origin === self.location.origin;
+  // egne filer: spørg altid serveren først (undgår gammel version i 10 min)
+  e.respondWith(fetch(e.request, same ? { cache: 'no-cache' } : {}).then(r => {
+    if (same && r.ok) { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(e.request, c)); }
+    return r;
+  }).catch(() => caches.match(e.request)));
 });
 
 self.addEventListener('notificationclick', e => {
