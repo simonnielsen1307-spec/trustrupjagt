@@ -1,0 +1,22 @@
+{
+  "name": "Hunting Trustrup",
+  "short_name": "Trustrup",
+  "description": "Hunting Trustrup app",
+  "start_url": "/trustrupjagt/",
+  "display": "standalone",
+  "background_color": "#0f1a0f",
+  "theme_color": "#c8a84b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

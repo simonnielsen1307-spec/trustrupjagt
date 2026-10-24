@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trustrup">
+<title>Hunting Trustrup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#080f08;--bg2:#0f1a0f;--bg3:#162316;--bg4:#1c2e1c;
+  --gold:#d4a843;--gold2:#f0c866;--gold3:#b08830;
+  --green:#3d7a52;--green2:#1e4a2e;--green3:#2a6040;
+  --pink:#e060d0;--red:#9a2525;--red2:#6a1515;
+  --text:#f4ede0;--text2:#9ab89a;--text3:#4a6a4a;
+  --border:rgba(212,168,67,.2);--border2:rgba(212,168,67,.08);
+  --shadow:0 8px 32px rgba(0,0,0,.6);
+  --fp:'Playfair Display';--fl:'Lora';
+}
+html,body{height:100%;margin:0;padding:0;}
+body{font-family:'Lora',Georgia,serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;}
+
+/* HEADER */
+header{background:rgba(8,15,8,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.logo{font-family:var(--fp),serif;font-size:16px;color:var(--gold);letter-spacing:1px;}
+.user-badge{position:absolute;right:10px;font-size:11px;color:var(--gold);padding:5px 12px;border:1px solid rgba(212,168,67,.3);border-radius:20px;cursor:pointer;background:rgba(212,168,67,.08);white-space:nowrap;}
+.search-btn{position:absolute;left:10px;background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:8px;line-height:1;}
+
+/* APP wrapper - position fixed fylder altid hele skærmen */
+#app{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:var(--bg);}
+#app.hidden{display:none;}
+
+/* MAIN */
+main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;padding-bottom:62px;}
+
+/* VIEWS */
+.view{display:none;flex-direction:column;flex:1;min-height:0;}
+.view.active{display:flex;}
+.view-inner{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:12px 14px 20px;min-height:0;}
+.view-header{padding:12px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.view-header h2{font-family:var(--fp),serif;font-size:20px;color:var(--gold);}
+
+/* NAV */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:2000;background:rgba(8,15,8,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;height:62px;padding-bottom:env(safe-area-inset-bottom);transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+nav.hidden{transform:translateY(100%);}
+.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:none;color:var(--text3);cursor:pointer;font-family:var(--fl),serif;position:relative;border-top:2px solid transparent;transition:all .2s;}
+.nav-tab.active{color:var(--gold);border-top-color:var(--gold);background:linear-gradient(180deg,rgba(212,168,67,.08),transparent);}
+.nav-tab .ti{font-size:20px;line-height:1;margin-bottom:2px;}
+.nav-tab .tl{font-size:9px;font-weight:500;}
+
+/* NAV TOGGLE */
+#nav-toggle{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:2001;transition:bottom .4s cubic-bezier(.34,1.56,.64,1);}
+#nav-toggle.up{bottom:62px;}
+.nav-pill{background:rgba(8,15,8,.85);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:6px 24px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.nav-pill-bar{width:32px;height:3px;background:rgba(212,168,67,.4);border-radius:2px;transition:transform .3s;}
+
+/* MORE MENU */
+#more-menu{display:none;position:fixed;bottom:62px;left:0;right:0;background:rgba(10,18,10,.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(212,168,67,.3);border-radius:24px 24px 0 0;z-index:3000;padding:8px 0;box-shadow:0 -8px 40px rgba(0,0,0,.8);}
+.more-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px;}
+.more-btn{background:rgba(22,35,22,.6);border:1px solid rgba(212,168,67,.1);border-radius:16px;color:var(--text2);font-family:var(--fl),serif;cursor:pointer;padding:12px 4px;text-align:center;transition:all .2s;}
+.more-btn.active,.more-btn:active{background:rgba(212,168,67,.1);color:var(--gold);border-color:rgba(212,168,67,.4);}
+
+/* CARDS */
+.card{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,67,.25),transparent);}
+.card-title{font-family:var(--fp),serif;font-size:17px;color:var(--gold);margin-bottom:8px;}
+
+/* BUTTONS */
+.btn{border:none;border-radius:12px;padding:14px 12px;font-family:var(--fl),serif;font-size:15px;cursor:pointer;font-weight:600;flex:1;}
+.btn-g{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg);box-shadow:0 4px 15px rgba(212,168,67,.3);}
+.btn-q{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
+.btn-add{background:linear-gradient(135deg,var(--green2),var(--green3));border:1px solid rgba(61,122,82,.5);border-radius:20px;color:var(--text);padding:9px 18px;font-family:var(--fl),serif;font-size:13px;cursor:pointer;}
+.modal-btns{display:flex;gap:10px;margin-top:16px;}
+
+/* MODALS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:3000;display:none;align-items:flex-end;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:linear-gradient(180deg,var(--bg3),var(--bg2));border:1px solid rgba(212,168,67,.4);border-radius:28px 28px 0 0;padding:24px 20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.modal h3{font-family:var(--fp),serif;font-size:19px;color:var(--gold);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;}
+.field input,.field select,.field textarea{width:100%;padding:13px 15px;background:rgba(8,15,8,.5);border:1px solid rgba(212,168,67,.15);border-radius:12px;color:var(--text);font-family:var(--fl),serif;font-size:16px;}
+.field textarea{min-height:80px;resize:vertical;}
+
+/* TOAST */
+.toast-el{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(15,26,15,.96);color:var(--gold);padding:10px 22px;border-radius:28px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 0 1px rgba(212,168,67,.2);backdrop-filter:blur(16px);white-space:nowrap;}
+
+/* MAP */
+#map{width:100%;height:100%;z-index:1;background:#1a2a1a;}
+.tm{background:var(--gold);border:2px solid rgba(0,0,0,.4);border-radius:20px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:var(--bg);font-family:var(--fp),serif;padding:4px 8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);}
+.tm.bk{background:var(--pink);}
+.tm.sel{background:var(--gold2);box-shadow:0 0 0 3px white,0 2px 8px rgba(0,0,0,.4);}
+.att{background:rgba(0,0,0,.6)!important;color:white!important;border:none!important;font-family:var(--fp),serif!important;font-size:12px!important;padding:3px 8px!important;border-radius:8px!important;}
+
+/* KORTLAG */
+#lp{position:absolute;top:10px;left:10px;z-index:1000;background:rgba(8,15,8,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;min-width:160px;overflow:hidden;}
+#lp-h{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;font-size:13px;color:var(--gold);font-family:var(--fp),serif;}
+#lp-b{padding:6px 12px 10px;}
+.lr{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:var(--text2);}
+.lr input{width:16px;height:16px;cursor:pointer;accent-color:var(--gold);}
+.ld{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
+
+/* STAND PANEL */
+#mb{position:absolute;bottom:12px;left:12px;right:12px;z-index:1000;background:rgba(8,15,8,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:none;font-size:13px;color:var(--text2);}
+
+/* FIND ME */
+#findme-btn{position:absolute;bottom:60px;right:12px;z-index:1000;background:rgba(8,15,8,.9);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;color:var(--gold);padding:10px 12px;font-size:20px;cursor:pointer;line-height:1;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#080f08,#0f2a0f,#1a3a1a,#0f1a0f);}
+.login-box{width:100%;max-width:380px;background:linear-gradient(160deg,rgba(22,35,22,.95),rgba(15,26,15,.98));border:1px solid rgba(212,168,67,.3);border-radius:28px;padding:36px 28px;box-shadow:0 20px 60px rgba(0,0,0,.8);}
+.login-field{margin-bottom:14px;}
+.login-field label{display:block;font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;}
+.login-field select,.login-field input{width:100%;padding:14px 16px;background:rgba(8,15,8,.6);border:1px solid rgba(212,168,67,.2);border-radius:12px;color:var(--text);font-family:var(--fl),serif;font-size:16px;}
+.login-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:14px;font-family:var(--fp),serif;font-size:17px;font-weight:700;color:var(--bg);cursor:pointer;margin-top:16px;letter-spacing:.5px;}
+
+/* AREA EDIT BAR */
+#area-bar{display:none;position:absolute;top:0;left:0;right:0;z-index:1001;background:rgba(10,5,15,.95);backdrop-filter:blur(16px);border-bottom:1px solid rgba(170,24,160,.4);padding:env(safe-area-inset-top) 12px 10px;padding-top:max(env(safe-area-inset-top), 44px);align-items:center;flex-wrap:wrap;gap:8px;}
+
+/* MISC */
+.hidden{display:none!important;}
+.empty{text-align:center;color:var(--text3);font-style:italic;padding:40px 20px;font-size:14px;}
+.tag{display:inline-block;background:rgba(22,35,22,.8);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--text2);margin:2px;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--gold),var(--gold3));border-radius:2px;}
+nav::-webkit-scrollbar{display:none;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes gpsPulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(3);opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash" style="position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+  <div style="font-size:72px;">🦌</div>
+  <div style="font-family:var(--fp),serif;font-size:28px;color:var(--gold);margin-top:16px;">Trustrup</div>
+  <div style="font-size:13px;color:var(--text3);margin-top:4px;">Jagtkonsortet</div>
+  <div style="margin-top:40px;width:48px;height:3px;background:var(--gold);border-radius:2px;opacity:.6;"></div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:52px;">🦌</div>
+      <div style="font-family:var(--fp),serif;font-size:22px;color:var(--gold);margin-top:8px;">Hunting Trustrup</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:4px;">Log ind for at fortsætte</div>
+    </div>
+    <div class="login-field"><label>Jæger</label>
+      <select id="login-user"><option value="">— Vælg dit navn —</option></select>
+    </div>
+    <div class="login-field"><label>Adgangskode</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div id="login-err" style="color:#f08080;font-size:13px;margin-top:8px;text-align:center;min-height:18px;"></div>
+    <button class="login-btn" onclick="doLogin()">Log ind →</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+<header>
+  <button class="search-btn" onclick="openSearch()">🔍</button>
+  <div class="logo">🦌 Trustrup</div>
+  <span class="user-badge" id="user-badge" onclick="openUserMenu()">👤</span>
+</header>
+
+<main>
+
+<!-- HJEM -->
+<div class="view active" id="v-hjem">
+  <div class="view-inner" id="hjem-content">
+    <div class="empty">Indlæser...</div>
+  </div>
+</div>
+
+<!-- KORT -->
+<div class="view" id="v-kort">
+  <div style="position:absolute;inset:0;">
+    <div id="map"></div>
+    <div id="lp">
+      <div id="lp-h" onclick="toggleLP()">🗺️ Kortlag <span id="lp-t">−</span></div>
+      <div id="lp-b">
+        <div class="lr"><input type="checkbox" id="c0" checked><label for="c0"><div class="ld" style="background:#d8ceb8;border:1px solid #907848;"></div> Vejkort</label></div>
+        <div class="lr"><input type="checkbox" id="c1"><label for="c1"><div class="ld" style="background:#b8d4a0;border:1px solid #4a7a38;"></div> Topokort</label></div>
+        <div class="lr"><input type="checkbox" id="c4" checked><label for="c4"><div class="ld" style="background:rgba(200,60,160,.5);border:2px solid #a010a0;border-radius:50%;"></div> Jagtareal</label></div>
+        <div class="lr"><input type="checkbox" id="c5" checked><label for="c5"><div class="ld" style="background:#4a90d9;border-radius:50%;"></div> Min position</label></div>
+        <div style="margin-top:8px;display:flex;gap:4px;">
+          <button onclick="startAreaEdit('nord')" style="flex:1;padding:6px;background:rgba(170,24,160,.2);border:1px solid #aa18a0;border-radius:7px;color:#f0b0e0;font-size:10px;cursor:pointer;">✏️ Nord</button>
+          <button onclick="startAreaEdit('syd')" style="flex:1;padding:6px;background:rgba(170,24,160,.2);border:1px solid #aa18a0;border-radius:7px;color:#f0b0e0;font-size:10px;cursor:pointer;">✏️ Syd</button>
+        </div>
+        <div id="area-btns" style="margin-top:4px;display:flex;flex-direction:column;gap:4px;"></div>
+        <button onclick="startDrawNewArea()" style="width:100%;margin-top:5px;padding:7px;background:rgba(212,168,67,.1);border:1px dashed rgba(212,168,67,.4);border-radius:8px;color:var(--gold);font-size:11px;cursor:pointer;">＋ Nyt areal</button>
+      </div>
+    </div>
+    <div id="area-bar">
+      <div style="font-size:14px;color:#f0b0e0;flex:1;">✏️ <span id="area-bar-name"></span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button onclick="addAreaPointCenter()" style="padding:8px 10px;background:rgba(60,180,60,.3);border:1px solid #60c060;border-radius:8px;color:#a0f0a0;font-size:12px;cursor:pointer;">＋ Punkt</button>
+        <button onclick="cancelAreaEdit()" style="padding:8px 10px;background:rgba(50,50,50,.4);border:1px solid #555;border-radius:8px;color:#aaa;font-size:12px;cursor:pointer;">✕</button>
+        <button onclick="saveAreaEdit()" style="padding:8px 14px;background:linear-gradient(135deg,#aa18a0,#dd60cc);border:none;border-radius:8px;color:white;font-size:13px;font-weight:700;cursor:pointer;">💾 Gem</button>
+      </div>
+      <div style="width:100%;font-size:11px;color:rgba(240,176,224,.6);">Træk punkter • Dobbelttryk slet • ＋ tilføj i midten</div>
+    </div>
+    <div id="mb">
+      📍 Klik på kortet for at placere: <strong id="mb-name"></strong>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button onclick="cancelPlace()" style="flex:1;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;cursor:pointer;">Annuller</button>
+      </div>
+    </div>
+    <button id="findme-btn" onclick="findMe()">📍</button>
+  </div>
+</div>
+
+<!-- Tårne -->
+<div class="view" id="v-Tårne">
+  <div class="view-header">
+    <h2>🌲 Tårne</h2>
+    <button class="btn-add" onclick="openAddStand()">＋ Tilføj torn</button>
+  </div>
+  <div class="view-inner" id="Tårne-list"></div>
+</div>
+
+<!-- SKYDELOG -->
+<div class="view" id="v-log">
+  <div class="view-header">
+    <h2>🎯 Skydelog</h2>
+    <button class="btn-add" onclick="openKillModal()">＋ Registrer</button>
+  </div>
+  <div style="padding:8px 14px;border-bottom:1px solid var(--border2);flex-shrink:0;">
+    <input type="text" id="kill-search" placeholder="🔍 Søg jæger, dyr, torn..." oninput="renderKills()" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;color:var(--text);font-family:var(--fl),serif;font-size:14px;">
+  </div>
+  <div class="view-inner" id="kill-list"></div>
+</div>
+
+<!-- JAGTER -->
+<div class="view" id="v-jagt">
+  <div class="view-header">
+    <h2>📅 Fællesjagter</h2>
+    <button class="btn-add" onclick="openModal('hunt-modal')">＋ Tilføj</button>
+  </div>
+  <div style="padding:8px 14px;border-bottom:1px solid var(--border2);display:flex;gap:8px;flex-shrink:0;">
+    <button id="jagt-liste-btn" onclick="setJagtView('liste')" style="flex:1;padding:9px;background:var(--gold);color:var(--bg);border:none;border-radius:10px;font-family:var(--fl),serif;font-size:13px;font-weight:700;cursor:pointer;">📋 Liste</button>
+    <button id="jagt-kal-btn" onclick="setJagtView('kalender')" style="flex:1;padding:9px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:10px;font-family:var(--fl),serif;font-size:13px;cursor:pointer;">🗓 Kalender</button>
+  </div>
+  <div class="view-inner" id="hunt-list"></div>
+</div>
+
+<!-- VEJR -->
+<div class="view" id="v-vejr">
+  <div class="view-header"><h2>🌡️ Vejr</h2></div>
+  <div class="view-inner" id="vejr-content"><div class="empty">Henter vejr...</div></div>
+</div>
+
+<!-- CHAT -->
+<div class="view" id="v-chat" style="flex-direction:column;">
+  <div style="background:var(--bg);border-bottom:1px solid var(--border2);padding:8px 12px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch;">
+    <button id="chat-alle-btn" onclick="switchChat('alle')" style="background:var(--gold);color:var(--bg);border:none;border-radius:20px;padding:7px 14px;font-family:var(--fl),serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">👥 Alle</button>
+    <div id="chat-private-tabs" style="display:flex;gap:6px;"></div>
+  </div>
+  <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch;min-height:0;"></div>
+  <div style="padding:10px 12px;border-top:1px solid var(--border2);display:flex;gap:8px;flex-shrink:0;background:var(--bg);">
+    <input type="text" id="chat-input" placeholder="Skriv en besked..." style="flex:1;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:24px;color:var(--text);font-family:var(--fl),serif;font-size:14px;">
+    <button onclick="sendChat()" style="background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:24px;padding:12px 20px;color:var(--bg);font-family:var(--fl),serif;font-weight:700;font-size:14px;cursor:pointer;">Send</button>
+  </div>
+</div>
+
+<!-- VAGTPLAN -->
+<div class="view" id="v-vagt">
+  <div class="view-header">
+    <h2>📋 Vagtplan</h2>
+    <button class="btn-add" onclick="openVagtModal()">＋ Tilføj</button>
+  </div>
+  <div class="view-inner" id="vagt-list"></div>
+</div>
+
+<!-- KVOTER -->
+<div class="view" id="v-kvoter">
+  <div class="view-header">
+    <h2>🦌 Kvoter</h2>
+    <button id="kvote-add-btn" class="btn-add" onclick="openModal('kvote-modal')" style="display:none;">＋ Tilføj</button>
+  </div>
+  <div class="view-inner" id="kvote-list"></div>
+</div>
+
+<!-- STATISTIK -->
+<div class="view" id="v-stat">
+  <div class="view-header"><h2>📊 Statistik</h2></div>
+  <div style="padding:8px 14px;border-bottom:1px solid var(--border2);display:flex;gap:6px;flex-shrink:0;">
+    <button id="stat-btn-0" onclick="setStatYear(0)" style="flex:1;padding:8px;background:var(--gold);color:var(--bg);border:none;border-radius:8px;font-family:var(--fl),serif;font-size:12px;font-weight:700;cursor:pointer;">I år</button>
+    <button id="stat-btn-1" onclick="setStatYear(1)" style="flex:1;padding:8px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:8px;font-family:var(--fl),serif;font-size:12px;cursor:pointer;">I fjor</button>
+    <button id="stat-btn--1" onclick="setStatYear(-1)" style="flex:1;padding:8px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:8px;font-family:var(--fl),serif;font-size:12px;cursor:pointer;">Alle år</button>
+  </div>
+  <div class="view-inner" id="stat-content"></div>
+</div>
+
+<!-- ADMIN -->
+<div class="view" id="v-admin">
+  <div class="view-header">
+    <h2>👑 Administration</h2>
+    <button class="btn-add" onclick="openModal('adminmsg-modal')">📢 Besked</button>
+  </div>
+  <div class="view-inner">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div class="card-title" style="margin:0;">👥 Medlemmer</div>
+        <button class="btn-add" onclick="openMemberModal()">＋ Tilføj</button>
+      </div>
+      <div id="member-list"><div class="empty">Henter...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🗺️ Jagtarealer</div>
+      <div id="admin-areas">
+        <div style="font-size:13px;color:var(--text2);padding:4px 0;">🟣 Nordstykket — <button onclick="startAreaEdit('nord')" style="background:none;border:none;color:var(--gold);font-size:12px;cursor:pointer;">✏️ Rediger</button></div>
+        <div style="font-size:13px;color:var(--text2);padding:4px 0;">🟣 Sydstykket — <button onclick="startAreaEdit('syd')" style="background:none;border:none;color:var(--gold);font-size:12px;cursor:pointer;">✏️ Rediger</button></div>
+        <div id="admin-extra-areas"></div>
+      </div>
+      <button onclick="startDrawNewArea()" style="width:100%;margin-top:10px;padding:12px;background:rgba(212,168,67,.1);border:1px dashed rgba(212,168,67,.4);border-radius:10px;color:var(--gold);font-family:var(--fl),serif;font-size:13px;cursor:pointer;">＋ Tegn nyt jagtareal</button>
+    </div>
+    <div class="card">
+      <div class="card-title">🛠️ Værktøjer</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button onclick="exportKillsCSV()" style="padding:13px;background:var(--green2);border:1px solid var(--green);border-radius:10px;color:var(--text);font-family:var(--fl),serif;font-size:14px;cursor:pointer;text-align:left;">📊 Eksporter skydelog (CSV)</button>
+        <button onclick="rydGamleData()" style="padding:13px;background:var(--red2);border:1px solid var(--red);border-radius:10px;color:#f4d0d0;font-family:var(--fl),serif;font-size:14px;cursor:pointer;text-align:left;">🗑 Ryd data ældre end 1 år</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Aktivitetslog</div>
+      <div id="activity-list"><div class="empty">Ingen aktivitet.</div></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav id="main-nav">
+  <button class="nav-tab active" id="tab-hjem" onclick="showView('hjem')"><span class="ti">🏠</span><span class="tl">Hjem</span></button>
+  <button class="nav-tab" id="tab-kort" onclick="showView('kort')"><span class="ti">🗺</span><span class="tl">Kort</span></button>
+  <button class="nav-tab" id="tab-Tårne" onclick="showView('Tårne')"><span class="ti">🌲</span><span class="tl">Tårne</span></button>
+  <button class="nav-tab" id="tab-log" onclick="showView('log')"><span class="ti">🎯</span><span class="tl">Skydelog</span></button>
+  <button class="nav-tab" id="tab-jagt" onclick="showView('jagt')"><span class="ti">📅</span><span class="tl">Jagter</span></button>
+  <button class="nav-tab" id="tab-mere" onclick="toggleMore()"><span class="ti">···</span><span class="tl">Mere</span><span id="chat-badge" style="display:none;position:absolute;top:4px;right:6px;background:#c8302a;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;line-height:16px;text-align:center;"></span></button>
+</nav>
+
+<div id="nav-toggle" class="up"><div class="nav-pill" onclick="toggleNav()"><div class="nav-pill-bar"></div><div class="nav-pill-bar"></div></div></div>
+<div id="more-overlay" onclick="closeMore()" style="display:none;position:fixed;inset:0;z-index:2999;"></div>
+<div id="more-menu">
+  <div class="more-grid">
+    <button class="more-btn" id="tab-vejr" onclick="showView('vejr');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">🌡️</span><span style="font-size:10px;">Vejr</span></button>
+    <button class="more-btn" id="tab-chat" onclick="showView('chat');closeMore()" style="position:relative;"><span style="font-size:26px;display:block;margin-bottom:4px;">💬</span><span style="font-size:10px;">Chat</span></button>
+    <button class="more-btn" id="tab-vagt" onclick="showView('vagt');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">📋</span><span style="font-size:10px;">Vagtplan</span></button>
+    <button class="more-btn" id="tab-kvoter" onclick="showView('kvoter');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">🦌</span><span style="font-size:10px;">Kvoter</span></button>
+    <button class="more-btn" id="tab-stat" onclick="showView('stat');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">📊</span><span style="font-size:10px;">Statistik</span></button>
+    <button class="more-btn" id="tab-admin" style="display:none;" onclick="showView('admin');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">👑</span><span style="font-size:10px;">Admin</span></button>
+  </div>
+  <div style="text-align:center;padding:6px 0 10px;"><button onclick="closeMore()" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;">✕ Luk</button></div>
+</div>
+
+<!-- ══ MODALS ══════════════════════════════════════════════════ -->
+
+<!-- Check-ind modal -->
+<div class="overlay" id="checkin-modal">
+<div class="modal">
+  <h3 id="ci-title">📍 Check ind</h3>
+  <div id="ci-status" style="text-align:center;padding:16px 0;"></div>
+  <div class="field"><label>Klokkeslæt</label><input type="time" id="ci-time"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" id="ci-btn" onclick="doCheckin()">✓ Check ind</button>
+    <button class="btn btn-q" onclick="closeModal('checkin-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Skydelog modal -->
+<div class="overlay" id="kill-modal">
+<div class="modal">
+  <h3>🎯 Registrer nedlagt vildt</h3>
+  <div class="field"><label>Jæger</label><select id="k-hunter"></select></div>
+  <div class="field"><label>Dyreart</label>
+    <select id="k-animal">
+      <option>Råbuk</option><option>Rå</option><option>Kronhjort</option><option>Hind</option>
+      <option>Dådyr</option><option>Dåbuk</option><option>Vildsvin</option>
+      <option>Hare</option><option>Fasan</option><option>Ræv</option><option>Andet</option>
+    </select>
+  </div>
+  <div class="field"><label>Torn</label><select id="k-stand"></select></div>
+  <div class="field"><label>Dato</label><input type="date" id="k-date"></div>
+  <div class="field"><label>Vægt (kg)</label><input type="number" id="k-weight" placeholder="0.0" step="0.1"></div>
+  <div class="field"><label>Note</label><textarea id="k-note" placeholder="Fristed, vejr, adfærd..."></textarea></div>
+  <div class="field"><label>Foto</label><input type="file" id="k-photo" accept="image/*" capture="environment"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="saveKill()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('kill-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Jagt modal -->
+<div class="overlay" id="hunt-modal">
+<div class="modal">
+  <h3>📅 Fællesjagt</h3>
+  <div class="field"><label>Dato</label><input type="date" id="h-date"></div>
+  <div class="field"><label>Type</label>
+    <select id="h-type"><option>Drivjagt</option><option>Standjagt</option><option>Trykjagt</option><option>Råvildtjagt</option><option>Andet</option></select>
+  </div>
+  <div class="field"><label>Note</label><input type="text" id="h-note" placeholder="Mødes kl. 6 ved porten..."></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="saveHunt()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('hunt-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Torn navn modal -->
+<div class="overlay" id="Tårne-edit-modal">
+<div class="modal">
+  <h3>✏️ Rediger torn</h3>
+  <div class="field"><label>Navn</label><input type="text" id="te-name" placeholder="Torn navn..."></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="saveTårnedit()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('Tårne-edit-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Tilføj torn modal -->
+<div class="overlay" id="add-stand-modal">
+<div class="modal">
+  <h3>🌲 Nyt torn</h3>
+  <div class="field"><label>Navn</label><input type="text" id="as-name" placeholder="f.eks. Stige, Kæret H..."></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="saveNewStand()">✓ Opret</button>
+    <button class="btn btn-q" onclick="closeModal('add-stand-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Vagtplan modal -->
+<div class="overlay" id="vagt-modal">
+<div class="modal">
+  <h3>📋 Vagtplan</h3>
+  <div class="field"><label>Dato</label><input type="date" id="vagt-date"></div>
+  <div class="field"><label>Jæger</label><select id="vagt-hunter"></select></div>
+  <div class="field"><label>Note</label><input type="text" id="vagt-note" placeholder="Hvad skal passes..."></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="saveVagt()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('vagt-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Kvote modal -->
+<div class="overlay" id="kvote-modal">
+<div class="modal">
+  <h3>🦌 Kvote</h3>
+  <div class="field"><label>Dyreart</label>
+    <select id="kv-animal"><option>Råbuk</option><option>Rå</option><option>Kronhjort</option><option>Hind</option><option>Dådyr</option><option>Vildsvin</option><option>Hare</option><option>Fasan</option><option>Ræv</option></select>
+  </div>
+  <div class="field"><label>Antal tilladt</label><input type="number" id="kv-antal" min="0" placeholder="0"></div>
+  <div class="field"><label>Sæson</label><input type="text" id="kv-saeson" placeholder="2024/2025"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="saveKvote()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('kvote-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Medlem modal -->
+<div class="overlay" id="member-modal">
+<div class="modal">
+  <h3 id="mm-title">👤 Tilføj medlem</h3>
+  <div class="field"><label>Navn</label><input type="text" id="mm-name" placeholder="Fornavn..."></div>
+  <div class="field"><label>Adgangskode <span style="font-size:10px;color:var(--text3);text-transform:none;">(lad stå tom = behold eksisterende)</span></label><input type="password" id="mm-pass" placeholder="Ny adgangskode..."></div>
+  <div class="field"><label>Rolle</label><select id="mm-admin"><option value="0">Jæger</option><option value="1">Administrator</option></select></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="saveMember()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('member-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Admin besked modal -->
+<div class="overlay" id="adminmsg-modal">
+<div class="modal">
+  <h3>📢 Send vigtig besked</h3>
+  <div class="field"><label>Besked til alle</label><textarea id="adminmsg-text" placeholder="f.eks. Mødes ved porten kl. 6:00..."></textarea></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="sendAdminMsg()">📢 Send</button>
+    <button class="btn btn-q" onclick="closeModal('adminmsg-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Skift kode modal -->
+<div class="overlay" id="changepass-modal">
+<div class="modal">
+  <h3>🔑 Skift adgangskode</h3>
+  <div class="field"><label>Nuværende kode</label><input type="password" id="cp-old"></div>
+  <div class="field"><label>Ny kode</label><input type="password" id="cp-new"></div>
+  <div class="field"><label>Gentag ny kode</label><input type="password" id="cp-confirm"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="doChangePass()">✓ Skift</button>
+    <button class="btn btn-q" onclick="closeModal('changepass-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<!-- Bruger menu -->
+<div class="overlay" id="user-modal">
+<div class="modal">
+  <div id="user-modal-name" style="font-family:var(--fp),serif;font-size:16px;color:var(--gold);margin-bottom:16px;text-align:center;padding-bottom:12px;border-bottom:1px solid var(--border);"></div>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <button onclick="closeModal('user-modal');openModal('changepass-modal');" style="padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;color:var(--text);font-family:var(--fl),serif;font-size:15px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🔑</span> Skift adgangskode</button>
+    <button onclick="doLogout();" style="padding:16px;background:rgba(154,37,37,.2);border:1px solid var(--red);border-radius:14px;color:#f4a0a0;font-family:var(--fl),serif;font-size:15px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🚪</span> Log ud</button>
+  </div>
+</div></div>
+
+<!-- Søgning -->
+<div class="overlay" id="search-modal" onclick="closeModal('search-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+  <div style="display:flex;gap:8px;margin-bottom:14px;">
+    <input type="text" id="search-input" placeholder="🔍 Søg overalt..." oninput="doSearch()" style="flex:1;padding:13px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;color:var(--text);font-family:var(--fl),serif;font-size:16px;">
+    <button onclick="closeModal('search-modal')" style="padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:14px;cursor:pointer;">✕</button>
+  </div>
+  <div id="search-results"><div class="empty">Skriv for at søge...</div></div>
+</div></div>
+
+<!-- Bekræft modal -->
+<div class="overlay" id="confirm-modal">
+<div class="modal">
+  <h3>⚠️ Bekræft</h3>
+  <div id="confirm-text" style="font-size:15px;color:var(--text);margin-bottom:16px;"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" id="confirm-ok">✓ Ja</button>
+    <button class="btn btn-q" onclick="closeModal('confirm-modal')">Annuller</button>
+  </div>
+</div></div>
+
+</div><!-- #app -->
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────
+const FB = 'https://dystrup-jagt-default-rtdb.europe-west1.firebasedatabase.app/trustrup';
+
+const DEFAULT_MEMBERS = {
+  'Simon':  { hash:'1d441af8ee8fab5ff520814c88b5f5da6bd1ba6e1e319ae1be75580b2e34fab7', admin:true  },
+  'Jørgen': { hash:'1177e69c78dd121117aad6840dbb6710120c4500361a2e7b33d528fbc70be690', admin:false },
+  'Allan':  { hash:'1177e69c78dd121117aad6840dbb6710120c4500361a2e7b33d528fbc70be690', admin:false },
+  'Jón':    { hash:'1177e69c78dd121117aad6840dbb6710120c4500361a2e7b33d528fbc70be690', admin:false }
+};
+
+const ANIMAL_COLORS = {
+  'Råbuk':'#8B4513','Rå':'#CD853F','Kronhjort':'#556B2F','Hind':'#6B8E23',
+  'Dådyr':'#8FBC8F','Dåbuk':'#2E8B57','Vildsvin':'#696969',
+  'Hare':'#D2691E','Fasan':'#B8860B','Ræv':'#FF6347','Andet':'#4a7c59'
+};
+
+const ANIMAL_EMOJI = {
+  'Råbuk':'🦌','Rå':'🦌','Kronhjort':'🦌','Hind':'🦌','Dådyr':'🦌','Dåbuk':'🦌',
+  'Vildsvin':'🐗','Hare':'🐇','Fasan':'🐦','Ræv':'🦊','Andet':'🎯'
+};
+
+// ── STATE ────────────────────────────────────────────────────────
+let DB = { stands:{}, kills:{}, hunts:{}, members:{}, chat:{}, activity:[], vagtplan:{}, kvoter:{} };
+let stands = [], kills = [], hunts = [];
+let firebaseLoaded = false;
+let nextStandId = 11;
+let currentUser = null;
+let activeChatChannel = 'alle';
+let editingMember = null;
+let editingStandId = null;
+let placingStand = null;
+let statYear = 0;
+let jagtView = 'liste';
+let nordPoints = null, sydPoints = null;
+let extraAreas = {};
+let editingArea = null;
+let editMarkers = [], editPolygon = null;
+let drawingNewArea = false, newAreaPoints = [], newAreaColor = '#4a90d9', newAreaName = '';
+let gpsMarker = null, gpsWatcher = null;
+let loginAttempts = 0, loginBlocked = false;
+let navVisible = true;
+let editingKillId = null;
+
+// ── UTILS ────────────────────────────────────────────────────────
+function toast(msg, dur=2500){
+  document.querySelectorAll('.toast-el').forEach(t=>t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast-el';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), dur);
+}
+
+function showConfirm(msg, cb){
+  document.getElementById('confirm-text').textContent = msg;
+  document.getElementById('confirm-ok').onclick = ()=>{ closeModal('confirm-modal'); cb(); };
+  openModal('confirm-modal');
+}
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function fmtDate(d){
+  if(!d) return '';
+  const dt = new Date(d+'T12:00:00');
+  return dt.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long'});
+}
+
+function getHunters(){
+  return Object.keys(DB.members && Object.keys(DB.members).length ? DB.members : DEFAULT_MEMBERS);
+}
+
+function getMembers(){
+  return DB.members && Object.keys(DB.members).length ? DB.members : DEFAULT_MEMBERS;
+}
+
+function isAdmin(){
+  const m = getMembers();
+  return m[currentUser] && m[currentUser].admin;
+}
+
+async function hashPass(p){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(p+'dystrup-jagt-salt-2024'));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function fbWrite(path, val){
+  try{
+    await fetch(FB+'/'+path+'.json', {
+      method: val===null?'DELETE':'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: val===null?null:JSON.stringify(val)
+    });
+  } catch(e){ console.error('fbWrite fail:', path, e.message); }
+}
+
+function logActivity(msg){
+  if(!DB.activity) DB.activity=[];
+  DB.activity.unshift({msg, ts:Date.now(), time:new Date().toLocaleString('da-DK')});
+  if(DB.activity.length>50) DB.activity=DB.activity.slice(0,50);
+  fbWrite('activity', DB.activity);
+}
+
+// ── CACHE ────────────────────────────────────────────────────────
+function saveCache(){
+  try{
+    localStorage.setItem('tj_cache', JSON.stringify({
+      stands:DB.stands, kills:DB.kills, hunts:DB.hunts,
+      chat:DB.chat, members:DB.members, adminMsg:DB.adminMsg,
+      ts:Date.now()
+    }));
+  }catch(e){}
+}
+
+function loadCache(){
+  try{
+    const raw = localStorage.getItem('tj_cache');
+    if(!raw) return false;
+    const c = JSON.parse(raw);
+    if(Date.now()-c.ts > 7200000) return false;
+    if(c.stands)  DB.stands  = c.stands;
+    if(c.kills)   DB.kills   = c.kills;
+    if(c.hunts)   DB.hunts   = c.hunts;
+    if(c.chat)    DB.chat    = c.chat;
+    if(c.members) DB.members = c.members;
+    if(c.adminMsg)DB.adminMsg= c.adminMsg;
+    return true;
+  }catch(e){ return false; }
+}
+
+function populateArrays(){
+  const incoming = Object.values(DB.stands||{});
+  incoming.forEach(s=>{
+    const ex = stands.find(e=>e.id===s.id);
+    if(ex){ ex.name=s.name; ex.lat=s.lat; ex.lng=s.lng; ex.booking=s.booking; }
+    else stands.push({...s, marker:null});
+  });
+  stands = stands.filter(s=>incoming.find(i=>i.id===s.id));
+  stands.sort((a,b)=>a.id-b.id);
+  kills = Object.values(DB.kills||{}).sort((a,b)=>(b.id||0)-(a.id||0));
+  hunts = Object.values(DB.hunts||{}).filter(x=>x&&x.date).sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+// ── LOGIN ────────────────────────────────────────────────────────
+function buildLoginSelect(){
+  const sel = document.getElementById('login-user');
+  sel.innerHTML = '<option value="">— Vælg dit navn —</option>';
+  getHunters().forEach(n=>{ const o=document.createElement('option'); o.value=o.textContent=n; sel.appendChild(o); });
+}
+
+async function doLogin(){
+  if(loginBlocked){ document.getElementById('login-err').textContent='Vent 60 sekunder'; return; }
+  const user = document.getElementById('login-user').value;
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-err');
+  if(!user){ err.textContent='Vælg dit navn'; return; }
+  if(!pass){ err.textContent='Indtast adgangskode'; return; }
+  const members = getMembers();
+  if(!members[user]){ err.textContent='Ukendt bruger'; return; }
+  const hash = await hashPass(pass);
+  const m = members[user];
+  const valid = m.hash ? hash===m.hash : m.pass===pass;
+  if(!valid){
+    loginAttempts++;
+    document.getElementById('login-pass').value='';
+    if(loginAttempts>=5){
+      loginBlocked=true;
+      err.textContent='For mange forsøg — vent 60s';
+      setTimeout(()=>{ loginBlocked=false; loginAttempts=0; err.textContent=''; },60000);
+    } else {
+      err.textContent='Forkert adgangskode ('+loginAttempts+'/5)';
+    }
+    return;
+  }
+  currentUser = user;
+  localStorage.setItem('tj_user', user);
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  afterLogin();
+  resetAutoLogout();
+}
+
+function doLogout(){
+  showConfirm('Log ud?', ()=>{
+    logActivity(currentUser+' loggede ud');
+    currentUser=null;
+    localStorage.removeItem('tj_user');
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('login-pass').value='';
+  });
+}
+
+function afterLogin(){
+  var crown = isAdmin()?' 👑':'';
+  document.getElementById('user-badge').textContent='👤 '+currentUser+crown;
+  if(isAdmin()){
+    document.getElementById('tab-admin').style.display='';
+    document.getElementById('kvote-add-btn').style.display='';
+  }
+  showView('hjem');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+async function initFirebase(){
+  setTimeout(startGPS,2000);
+
+  setTimeout(()=>{
+    const s=document.getElementById('splash');
+    s.style.transition='opacity .4s';
+    s.style.opacity='0';
+    setTimeout(()=>s.remove(),400);
+  },1200);
+
+  const savedUser = localStorage.getItem('tj_user');
+
+  const hadCache = loadCache();
+  if(hadCache && savedUser && getMembers()[savedUser]){
+    currentUser = savedUser;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    buildLoginSelect();
+    populateArrays();
+    afterLogin();
+    toast('📦 Opdaterer...');
+  } else {
+    buildLoginSelect();
+    document.getElementById('login-screen').classList.remove('hidden');
+  }
+
+  try{
+    const [dbR, msgR, areaR, extraR] = await Promise.all([
+      fetch(FB+'.json').catch(()=>null),
+      fetch(FB+'/adminMsg.json').catch(()=>null),
+      fetch(FB+'/areaPoints.json').catch(()=>null),
+      fetch(FB+'/extraAreas.json').catch(()=>null)
+    ]);
+    if(dbR && dbR.ok){
+      const d = await dbR.json();
+      if(d && typeof d==='object'){
+        ['stands','kills','hunts','members','chat','activity','vagtplan','kvoter','nextStandId'].forEach(k=>{ if(d[k]) DB[k]=d[k]; });
+      }
+    }
+    if(msgR && msgR.ok){ const d=await msgR.json(); if(d) DB.adminMsg=d; }
+    if(areaR && areaR.ok){ const d=await areaR.json(); if(d){ if(d.nord)nordPoints=d.nord; if(d.syd)sydPoints=d.syd; } }
+    if(extraR && extraR.ok){ const d=await extraR.json(); if(d&&typeof d==='object') extraAreas=d; }
+  }catch(e){ console.error('Firebase error:', e.message); }
+
+  if(!Object.keys(DB.stands||{}).length){
+    const ds={};
+    for(let i=1;i<=10;i++) ds[i]={id:i,name:'Torn '+i,lat:null,lng:null,booking:null};
+    DB.stands=ds; DB.nextStandId=11;
+    await fbWrite('stands',ds); await fbWrite('nextStandId',11);
+  }
+  if(!nordPoints) nordPoints=nord.map(p=>({lat:p[0],lng:p[1]}));
+  if(!sydPoints) sydPoints=syd.map(p=>({lat:p[0],lng:p[1]}));
+
+  const maxId=Math.max(0,...Object.keys(DB.stands||{}).map(Number));
+  if(DB.nextStandId) nextStandId=DB.nextStandId;
+  else if(maxId>=nextStandId) nextStandId=maxId+1;
+
+  firebaseLoaded = true;
+  stands=[];
+  populateArrays();
+  buildLoginSelect();
+  redrawAllAreas();
+  updateExtraAreaBtns();
+
+  if(!hadCache && savedUser && getMembers()[savedUser]){
+    currentUser=savedUser;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    afterLogin();
+  }
+
+  if(currentUser){
+    var crown2=isAdmin()?' 👑':'';
+    document.getElementById('user-badge').textContent='👤 '+currentUser+crown2;
+    var av=document.querySelector('.view.active');
+    var avid=av?av.id.replace('v-',''):'hjem';
+    showView(avid);
+  }
+
+  saveCache();
+  startPolling();
+  toast('✅ Klar!');
+
+  if(map){
+    stands.forEach(function(s){ if(s.lat&&s.lng&&!s.marker) addMarker(s); });
+    renderStands();
+  }
+
+  document.addEventListener('touchstart',()=>{ if(!navVisible) toggleNav(); },{passive:true});
+  ['touchstart','click','keydown'].forEach(ev=>document.addEventListener(ev,resetAutoLogout,{passive:true}));
+  document.addEventListener('click',function(e){
+    var btn=e.target;
+    while(btn&&btn.tagName!=='BUTTON') btn=btn.parentElement;
+    if(!btn) return;
+    btn.style.transform='scale(0.95)';
+    setTimeout(function(){btn.style.transform='';},100);
+  },{passive:true});
+
+  var _sx=0, _sy=0;
+  document.addEventListener('touchstart',function(e){
+    _sx=e.touches[0].clientX;
+    _sy=e.touches[0].clientY;
+  },{passive:true});
+  document.addEventListener('touchend',function(e){
+    var dx=e.changedTouches[0].clientX-_sx;
+    var dy=e.changedTouches[0].clientY-_sy;
+    if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.5) return;
+    if(document.querySelector('.overlay.open')) return;
+    if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA') return;
+    var cur=document.querySelector('.view.active');
+    if(!cur) return;
+    if(cur.id==='v-kort') return;
+    var idx=MAIN_TABS.indexOf(cur.id.replace('v-',''));
+    if(idx===-1) return;
+    if(dx<0&&idx<MAIN_TABS.length-1) showView(MAIN_TABS[idx+1]);
+    else if(dx>0&&idx>0) showView(MAIN_TABS[idx-1]);
+  },{passive:true});
+}
+
+// ── MAP ──────────────────────────────────────────────────────────
+let lOSM, lTop, map;
+function initMap(){
+  if(map) return;
+  if(typeof L === 'undefined'){ toast('⚠️ Kortbibliotek ikke indlæst - tjek internetforbindelse'); return; }
+  lOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+  lTop = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17});
+  map  = L.map('map',{layers:[lOSM],zoomControl:false});
+}
+
+const nord=[[56.3526,10.7742],[56.3526,10.7862],[56.3486,10.7862],[56.3486,10.7742]];
+const syd=[[56.3446,10.7742],[56.3446,10.7862],[56.3406,10.7862],[56.3406,10.7742]];
+
+const aStyle={color:'#aa18a0',weight:2.5,fillColor:'#dd60cc',fillOpacity:0.28};
+let ag;
+function initMapLayers(){
+  ag=L.featureGroup().addTo(map);
+  map.setView([56.3466,10.7802],14);
+
+  map.on('click',function(e){
+    if(drawingNewArea){ drawNewAreaClick(e); return; }
+    if(editingArea){ return; }
+    if(!placingStand) return;
+    placingStand.lat=e.latlng.lat;
+    placingStand.lng=e.latlng.lng;
+    if(!placingStand.marker) addMarker(placingStand);
+    else placingStand.marker.setLatLng([placingStand.lat,placingStand.lng]);
+    updMarker(placingStand);
+    saveOneSt(placingStand);
+    cancelPlace();
+    toast('✅ '+placingStand.name+' placeret!');
+  });
+
+  ['c0','c1'].forEach(id=>{
+    const layers={c0:lOSM,c1:lTop};
+    document.getElementById(id).addEventListener('change',function(){
+      if(this.checked){
+        ['c0','c1'].forEach(o=>{ if(o!==id){ document.getElementById(o).checked=false; map.removeLayer(layers[o]); } });
+        map.addLayer(layers[id]);
+      } else map.removeLayer(layers[id]);
+    });
+  });
+  document.getElementById('c4').addEventListener('change',function(){ this.checked?ag.addTo(map):map.removeLayer(ag); });
+  document.getElementById('c5').addEventListener('change',function(){
+    if(this.checked) startGPS();
+    else { if(gpsWatcher){navigator.geolocation.clearWatch(gpsWatcher);gpsWatcher=null;} if(gpsMarker){map.removeLayer(gpsMarker);gpsMarker=null;} }
+  });
+
+  document.getElementById('lp').querySelector('#lp-b').style.display='none';
+  document.getElementById('lp-t').textContent='+';
+}
+
+function toggleLP(){
+  const b=document.getElementById('lp-b');
+  const t=document.getElementById('lp-t');
+  const open=b.style.display!=='none';
+  b.style.display=open?'none':'';
+  t.textContent=open?'+':'−';
+}
+
+function redrawAllAreas(){
+  if(!ag) return;
+  ag.clearLayers();
+  const pts=(nordPoints||nord.map(p=>({lat:p[0],lng:p[1]})));
+  const spts=(sydPoints||syd.map(p=>({lat:p[0],lng:p[1]})));
+  L.polygon(pts.map(p=>[p.lat,p.lng]),aStyle).bindTooltip('Nordstykket',{permanent:true,direction:'center',className:'att'}).addTo(ag);
+  L.polygon(spts.map(p=>[p.lat,p.lng]),aStyle).bindTooltip('Sydstykket',{permanent:true,direction:'center',className:'att'}).addTo(ag);
+  Object.values(extraAreas||{}).forEach(area=>{
+    if(!area||!area.points||area.points.length<3) return;
+    const c=area.color||'#4a90d9';
+    L.polygon(area.points.map(p=>[p.lat,p.lng]),{color:c,weight:2.5,fillColor:c,fillOpacity:0.25})
+      .bindTooltip(area.name,{permanent:true,direction:'center',className:'att'}).addTo(ag);
+  });
+}
+
+function updateExtraAreaBtns(){
+  const el=document.getElementById('area-btns');
+  if(!el) return;
+  const entries=Object.entries(extraAreas||{});
+  el.innerHTML=entries.map(([id,a])=>
+    '<div style="display:flex;gap:4px;margin-bottom:4px;">'+
+    '<button onclick="startAreaEdit(\''+id+'\')" style="flex:1;padding:7px;background:rgba(74,144,217,.2);border:1px solid #4a90d9;border-radius:8px;color:#a0c8f0;font-size:11px;cursor:pointer;">✏️ '+a.name+'</button>'+
+    '<button onclick="deleteExtraArea(\''+id+'\')" style="padding:7px 9px;background:var(--red2);border:1px solid var(--red);border-radius:8px;color:#f4d0d0;font-size:11px;cursor:pointer;">🗑</button>'+
+    '</div>'
+  ).join('');
+  const ae=document.getElementById('admin-extra-areas');
+  if(ae) ae.innerHTML=entries.map(([id,a])=>
+    '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;">'+
+    '<div style="font-size:13px;color:var(--text2);flex:1;">🔵 '+a.name+'</div>'+
+    '<button onclick="deleteExtraArea(\''+id+'\')" style="padding:4px 8px;background:var(--red2);border:1px solid var(--red);border-radius:6px;color:#f4d0d0;font-size:11px;cursor:pointer;">🗑</button>'+
+    '</div>'
+  ).join('');
+}
+
+function addMarker(s){
+  if(!map) return;
+  s.marker=L.marker([s.lat,s.lng],{icon:mkIcon(s,false),draggable:true}).addTo(map);
+  s.marker.on('click',()=>openCheckin(s.id));
+  s.marker.on('dragend',e=>{
+    s.lat=e.target.getLatLng().lat;
+    s.lng=e.target.getLatLng().lng;
+    saveOneSt(s);
+  });
+}
+
+function mkIcon(s, active){
+  const bk=s.booking;
+  const defName='Torn '+s.id;
+  const label=s.name&&s.name!==defName?s.name.substring(0,8):String(s.id);
+  return L.divIcon({className:'',html:'<div class="tm'+(bk?' bk':'')+(active?' sel':'')+'">'+label+'</div>',iconAnchor:[20,15]});
+}
+
+function updMarker(s){
+  if(s.marker) s.marker.setIcon(mkIcon(s, placingStand&&placingStand.id===s.id));
+}
+
+function renderStands(){
+  stands.forEach(s=>updMarker(s));
+}
+
+function placeTorn(id){
+  const s=stands.find(x=>x.id===id);
+  if(!s) return;
+  placingStand=s;
+  showView('kort');
+  document.getElementById('mb').style.display='block';
+  document.getElementById('mb-name').textContent=s.name;
+  map.getContainer().style.cursor='crosshair';
+}
+
+function cancelPlace(){
+  placingStand=null;
+  document.getElementById('mb').style.display='none';
+  if(map) map.getContainer().style.cursor='';
+}
+
+function findMe(){
+  if(!map){ showView('kort'); return; }
+  if(!gpsMarker){ startGPS(); return; }
+  map.setView(gpsMarker.getLatLng(),16,{animate:true});
+}
+
+function startGPS(){
+  if(!navigator.geolocation){ toast('GPS ikke tilgængeligt'); return; }
+  if(gpsWatcher) return;
+  navigator.geolocation.getCurrentPosition(gpsPos,gpsErr,{enableHighAccuracy:true,timeout:10000,maximumAge:0});
+  gpsWatcher=navigator.geolocation.watchPosition(gpsPos,gpsErr,{enableHighAccuracy:true,maximumAge:10000,timeout:15000});
+}
+
+function gpsPos(pos){
+  const lat=pos.coords.latitude, lng=pos.coords.longitude;
+  if(!map) return;
+  if(!gpsMarker){
+    const ic=L.divIcon({className:'',html:'<div style="position:relative;width:20px;height:20px;"><div style="position:absolute;inset:-8px;background:rgba(74,144,217,.2);border-radius:50%;animation:gpsPulse 2s ease-out infinite;"></div><div style="position:absolute;inset:0;background:#4a90d9;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div></div>',iconSize:[20,20],iconAnchor:[10,10]});
+    gpsMarker=L.marker([lat,lng],{icon:ic}).addTo(map);
+    map.setView([lat,lng],15);
+    toast('📍 Position fundet!');
+  } else gpsMarker.setLatLng([lat,lng]);
+}
+
+function gpsErr(e){
+  if(e.code===1) toast('⛔ Tillad lokation i Safari indstillinger');
+}
+
+// ── AREA EDITOR ──────────────────────────────────────────────────
+function startAreaEdit(area){
+  if(!isAdmin()){ toast('⛔ Kun administrator'); return; }
+  if(!nordPoints) nordPoints=nord.map(function(p){return {lat:p[0],lng:p[1]};});
+  if(!sydPoints) sydPoints=syd.map(function(p){return {lat:p[0],lng:p[1]};});
+  clearEditMarkers();
+  editingArea=area;
+  var points;
+  if(area==='nord') points=nordPoints;
+  else if(area==='syd') points=sydPoints;
+  else points=(extraAreas[area]||{}).points||[];
+
+  document.getElementById('area-bar').style.display='flex';
+  document.getElementById('area-bar-name').textContent=area==='nord'?'Nordstykket':area==='syd'?'Sydstykket':(extraAreas[area]||{}).name||area;
+  map.dragging.disable(); map.touchZoom.disable(); map.scrollWheelZoom.disable();
+
+  showView('kort');
+  setTimeout(function(){
+    points.forEach(function(p,i){addEditMarker(p,i,points);});
+    updateEditPoly();
+  }, map ? 0 : 200);
+  const lp=document.getElementById('lp-b');
+  if(lp.style.display!=='none') toggleLP();
+  toast('✏️ Træk punkterne for at redigere');
+}
+
+function addEditMarker(p,i,points){
+  var m=L.marker([p.lat,p.lng],{
+    draggable:true,
+    autoPan:true,
+    icon:L.divIcon({
+      className:'',
+      html:'<div style="width:32px;height:32px;background:#dd60cc;border:3px solid white;border-radius:50%;box-shadow:0 3px 10px rgba(0,0,0,.6);cursor:grab;display:flex;align-items:center;justify-content:center;"></div>',
+      iconSize:[32,32],
+      iconAnchor:[16,16]
+    })
+  }).addTo(map);
+  m.on('drag',function(e){ points[i]={lat:e.latlng.lat,lng:e.latlng.lng}; updateEditPoly(); });
+  m.on('dragend',function(e){ points[i]={lat:e.target.getLatLng().lat,lng:e.target.getLatLng().lng}; });
+  m.on('dblclick',function(e){ L.DomEvent.stop(e); if(points.length>3){points.splice(i,1);refreshEditMarkers();}else toast('Min. 3 punkter'); });
+  editMarkers.push(m);
+}
+
+function refreshEditMarkers(){
+  const area=editingArea;
+  clearEditMarkers();
+  editingArea=area;
+  let points=area==='nord'?nordPoints:area==='syd'?sydPoints:(extraAreas[area]||{}).points||[];
+  points.forEach((p,i)=>addEditMarker(p,i,points));
+  updateEditPoly();
+}
+
+function clearEditMarkers(){
+  editMarkers.forEach(m=>map.removeLayer(m));
+  editMarkers=[];
+  if(editPolygon){map.removeLayer(editPolygon);editPolygon=null;}
+}
+
+function updateEditPoly(){
+  if(editPolygon) map.removeLayer(editPolygon);
+  let pts=editingArea==='nord'?nordPoints:editingArea==='syd'?sydPoints:(extraAreas[editingArea]||{}).points||[];
+  editPolygon=L.polygon(pts.map(p=>[p.lat,p.lng]),{color:'#ff60ff',weight:2,fillColor:'#ff60ff',fillOpacity:.1,dashArray:'6,4'}).addTo(map);
+}
+
+function addAreaPointCenter(){
+  if(!editingArea||!map) return;
+  const c=map.getCenter();
+  let pts=editingArea==='nord'?nordPoints:editingArea==='syd'?sydPoints:(extraAreas[editingArea]||{}).points||[];
+  pts.push({lat:c.lat,lng:c.lng});
+  refreshEditMarkers();
+  toast('📍 Punkt tilføjet i midten');
+}
+
+async function saveAreaEdit(){
+  if(drawingNewArea){ await saveNewArea(); return; }
+  if(!editingArea) return;
+  const aname=editingArea==='nord'?'Nordstykket':editingArea==='syd'?'Sydstykket':(extraAreas[editingArea]||{}).name;
+  await fbWrite('areaPoints',{nord:nordPoints,syd:sydPoints});
+  if(editingArea!=='nord'&&editingArea!=='syd') await fbWrite('extraAreas',extraAreas);
+  cancelAreaEdit();
+  redrawAllAreas();
+  toast('✅ '+aname+' gemt!');
+}
+
+function cancelAreaEdit(){
+  clearEditMarkers();
+  drawingNewArea=false; newAreaPoints=[];
+  if(map){
+    map.dragging.enable();
+    if(map.touchZoom) map.touchZoom.enable();
+    if(map.scrollWheelZoom) map.scrollWheelZoom.enable();
+    if(map) map.off('click',drawNewAreaClick);
+  }
+  var bar=document.getElementById('area-bar');
+  if(bar) bar.style.display='none';
+  editingArea=null;
+  redrawAllAreas();
+}
+
+function startDrawNewArea(){
+  if(!isAdmin()){ toast('⛔ Kun administrator'); return; }
+  const overlay=document.createElement('div');
+  overlay.id='new-area-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:5000;display:flex;align-items:center;justify-content:center;padding:24px;';
+  const box=document.createElement('div');
+  box.style.cssText='background:var(--bg2);border:1px solid var(--gold);border-radius:20px;padding:24px;width:100%;max-width:380px;';
+  const title=document.createElement('div');
+  title.style.cssText='font-size:18px;color:var(--gold);margin-bottom:16px;';
+  title.textContent='Nyt jagtareal';
+  const inp=document.createElement('input');
+  inp.type='text'; inp.placeholder='Navn f.eks. Vesterskov';
+  inp.style.cssText='width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;margin-bottom:12px;box-sizing:border-box;';
+  inp.id='new-area-inp';
+  const colors=['#4a90d9','#50c878','#ff8c00','#e74c3c','#9b59b6','#1abc9c'];
+  const cr=document.createElement('div');
+  cr.style.cssText='display:flex;gap:8px;margin-bottom:16px;';
+  const colorInp=document.createElement('input');
+  colorInp.type='hidden'; colorInp.id='new-area-color-val'; colorInp.value=colors[0];
+  colors.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='width:34px;height:34px;background:'+c+';border-radius:50%;cursor:pointer;border:'+(i===0?'3px solid white':'2px solid transparent')+';flex-shrink:0;';
+    d.onclick=function(){ cr.querySelectorAll('div').forEach(x=>x.style.border='2px solid transparent'); this.style.border='3px solid white'; colorInp.value=c; };
+    cr.appendChild(d);
+  });
+  const btns=document.createElement('div');
+  btns.style.cssText='display:flex;gap:8px;';
+  const cancelB=document.createElement('button');
+  cancelB.style.cssText='flex:1;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:14px;cursor:pointer;';
+  cancelB.textContent='Annuller'; cancelB.onclick=()=>overlay.remove();
+  const startB=document.createElement('button');
+  startB.style.cssText='flex:1;padding:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;';
+  startB.textContent='Start tegning';
+  startB.onclick=()=>{
+    newAreaName=document.getElementById('new-area-inp').value.trim();
+    newAreaColor=document.getElementById('new-area-color-val').value;
+    if(!newAreaName){toast('Skriv et navn');return;}
+    overlay.remove();
+    beginDrawNewArea();
+  };
+  btns.appendChild(cancelB); btns.appendChild(startB);
+  box.appendChild(title); box.appendChild(inp); box.appendChild(cr); box.appendChild(colorInp); box.appendChild(btns);
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  setTimeout(()=>inp.focus(),100);
+}
+
+function beginDrawNewArea(){
+  drawingNewArea=true; newAreaPoints=[];
+  clearEditMarkers();
+  document.getElementById('area-bar').style.display='flex';
+  document.getElementById('area-bar-name').textContent='Tegner: '+newAreaName;
+  showView('kort');
+  setTimeout(function(){
+    if(map){
+      map.dragging.disable();
+      if(map.touchZoom) map.touchZoom.disable();
+      if(map.scrollWheelZoom) map.scrollWheelZoom.disable();
+      map.on('click',drawNewAreaClick);
+    }
+  }, map ? 0 : 300);
+  const lp=document.getElementById('lp-b');
+  if(lp.style.display!=='none') toggleLP();
+  toast('Tryk på kortet for at tegne. Tryk Gem når færdig.');
+}
+
+function drawNewAreaClick(e){
+  if(!drawingNewArea) return;
+  newAreaPoints.push({lat:e.latlng.lat,lng:e.latlng.lng});
+  const m=L.circleMarker([e.latlng.lat,e.latlng.lng],{radius:6,fillColor:newAreaColor,color:'white',weight:2,fillOpacity:1}).addTo(map);
+  editMarkers.push(m);
+  if(editPolygon) map.removeLayer(editPolygon);
+  if(newAreaPoints.length>=2){
+    editPolygon=L.polygon(newAreaPoints.map(p=>[p.lat,p.lng]),{color:newAreaColor,weight:2,fillColor:newAreaColor,fillOpacity:.2,dashArray:'6,4'}).addTo(map);
+  }
+  toast(newAreaPoints.length+' punkter');
+}
+
+async function saveNewArea(){
+  if(newAreaPoints.length<3){toast('Tegn mindst 3 punkter');return;}
+  const id='area_'+Date.now();
+  extraAreas[id]={name:newAreaName,color:newAreaColor,points:newAreaPoints};
+  await fbWrite('extraAreas',extraAreas);
+  cancelAreaEdit();
+  redrawAllAreas();
+  updateExtraAreaBtns();
+  toast('✅ '+newAreaName+' gemt!');
+}
+
+async function deleteExtraArea(id){
+  const area=extraAreas[id];
+  if(!area) return;
+  showConfirm('Slet '+area.name+'?',async()=>{
+    delete extraAreas[id];
+    await fbWrite('extraAreas',extraAreas);
+    redrawAllAreas();
+    updateExtraAreaBtns();
+    toast('🗑 '+area.name+' slettet');
+  });
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────────
+const MAIN_TABS=['hjem','kort','Tårne','log','jagt'];
+
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab,.more-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('v-'+v).classList.add('active');
+  const tab=document.getElementById('tab-'+v);
+  if(tab) tab.classList.add('active');
+  if(!MAIN_TABS.includes(v)) document.getElementById('tab-mere').classList.add('active');
+  if(v==='hjem') renderDashboard();
+  if(v==='Tårne') renderTårne();
+  if(v==='log') renderKills();
+  if(v==='jagt') renderHunts();
+  if(v==='vejr') loadVejr();
+  if(v==='chat'){ buildChatTabs(); renderChat(); clearChatBadge(); }
+  if(v==='vagt') renderVagt();
+  if(v==='kvoter'){ renderKvoter(); if(isAdmin()) document.getElementById('kvote-add-btn').style.display=''; }
+  if(v==='stat') renderStats();
+  if(v==='admin') loadAndRenderAdmin();
+  if(v==='kort'){
+    if(!map){
+      initMap();
+      initMapLayers();
+      setTimeout(function(){
+        map.invalidateSize(true);
+        redrawAllAreas();
+        stands.forEach(function(s){ if(s.lat&&s.lng&&!s.marker) addMarker(s); });
+        renderStands();
+      }, 50);
+    } else {
+      map.invalidateSize(true);
+    }
+  }
+}
+
+function toggleMore(){
+  const m=document.getElementById('more-menu');
+  const o=document.getElementById('more-overlay');
+  const open=m.style.display!=='none';
+  m.style.display=open?'none':'block';
+  o.style.display=open?'none':'block';
+  document.getElementById('tab-mere').classList.toggle('active',!open);
+}
+
+function closeMore(){
+  document.getElementById('more-menu').style.display='none';
+  document.getElementById('more-overlay').style.display='none';
+  document.getElementById('tab-mere').classList.remove('active');
+}
+
+function toggleNav(){
+  navVisible=!navVisible;
+  const nav=document.getElementById('main-nav');
+  const tog=document.getElementById('nav-toggle');
+  nav.classList.toggle('hidden',!navVisible);
+  tog.classList.toggle('up',navVisible);
+}
+
+let autoLogTimer=null;
+function resetAutoLogout(){
+  if(autoLogTimer) clearTimeout(autoLogTimer);
+  autoLogTimer=setTimeout(()=>{
+    if(currentUser){toast('⏰ Logget ud automatisk'); setTimeout(()=>doLogout(),2000);}
+  }, 8*60*60*1000);
+}
+
+function openUserMenu(){
+  document.getElementById('user-modal-name').textContent='👤 '+currentUser+(isAdmin()?' 👑':'');
+  openModal('user-modal');
+}
+
+function openSearch(){
+  openModal('search-modal');
+  document.getElementById('search-input').value='';
+  document.getElementById('search-results').innerHTML='<div class="empty">Skriv for at søge...</div>';
+  setTimeout(()=>document.getElementById('search-input').focus(),300);
+}
+
+function doSearch(){
+  const q=document.getElementById('search-input').value.trim().toLowerCase();
+  const el=document.getElementById('search-results');
+  if(q.length<2){el.innerHTML='<div class="empty">Skriv mindst 2 tegn...</div>';return;}
+  let h='';
+  kills.filter(k=>(k.hunter||'').toLowerCase().includes(q)||(k.animal||'').toLowerCase().includes(q)).slice(0,4).forEach(k=>{
+    const sn=(stands.find(s=>s.id===k.standId)||{}).name||'';
+    h+='<div onclick="closeModal(\'search-modal\');showView(\'log\')" style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg3);border-radius:12px;margin-bottom:8px;cursor:pointer;">'+
+      '<div style="font-size:22px;">🎯</div><div><div style="font-size:14px;font-weight:600;">'+k.animal+(k.weight?' · '+k.weight+'kg':'')+'</div>'+
+      '<div style="font-size:12px;color:var(--text3);">'+k.hunter+' · '+sn+'</div></div></div>';
+  });
+  stands.filter(s=>(s.name||'').toLowerCase().includes(q)).slice(0,3).forEach(s=>{
+    h+='<div onclick="closeModal(\'search-modal\');showView(\'Tårne\')" style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg3);border-radius:12px;margin-bottom:8px;cursor:pointer;">'+
+      '<div style="font-size:22px;">🌲</div><div><div style="font-size:14px;font-weight:600;">'+s.name+'</div>'+
+      '<div style="font-size:12px;color:var(--text3);">'+(s.booking?'🔴 '+s.booking.hunter:'🟢 Ledig')+'</div></div></div>';
+  });
+  el.innerHTML=h||'<div class="empty">Ingen resultater</div>';
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────
+function renderDashboard(){
+  const el=document.getElementById('hjem-content');
+  if(!el) return;
+  const now=new Date(), today=now.toISOString().split('T')[0];
+  let h='';
+
+  if(DB.adminMsg&&DB.adminMsg.text){
+    h+='<div style="background:linear-gradient(135deg,#2a1a0a,#3a2a0a);border:2px solid var(--gold);border-radius:14px;padding:14px;margin-bottom:12px;">';
+    h+='<div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:4px;">📢 VIGTIG BESKED</div>';
+    h+='<div style="font-size:14px;">'+DB.adminMsg.text+'</div></div>';
+  }
+
+  h+='<div style="text-align:center;padding:6px 0 12px;">';
+  h+='<div style="font-size:20px;color:var(--gold);">God jagt, '+currentUser+'! 🦌</div>';
+  h+='<div style="font-size:12px;color:var(--text3);margin-top:3px;">'+now.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long'})+'</div>';
+  h+='</div>';
+
+  h+='<div id="dash-weather" style="background:linear-gradient(135deg,#182818,#1e3a1e);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:14px;min-height:80px;">';
+  h+='<div style="font-size:36px;">🌤️</div><div style="flex:1;"><div style="font-size:22px;font-weight:700;color:var(--gold);">...</div><div style="font-size:12px;color:var(--text3);">Henter vejr...</div></div>';
+  h+='<div style="text-align:right;font-size:11px;color:var(--text3);">🌄 --:--<br>🌇 --:--</div></div>';
+
+  const occ=stands.filter(s=>s.booking);
+  const free=stands.filter(s=>s.lat&&!s.booking);
+  h+='<div class="card"><div class="card-title">🌲 Tårne</div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:10px;">';
+  h+='<div style="flex:1;background:var(--bg3);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--green);">'+free.length+'</div><div style="font-size:11px;color:var(--text3);">Ledige</div></div>';
+  h+='<div style="flex:1;background:var(--bg3);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--pink);">'+occ.length+'</div><div style="font-size:11px;color:var(--text3);">Optaget</div></div>';
+  h+='</div>';
+  if(occ.length){
+    occ.forEach(s=>{
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border2);">';
+      h+='<div style="width:28px;height:28px;background:var(--pink);color:var(--bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">'+s.id+'</div>';
+      h+='<div style="flex:1;font-size:13px;">'+s.name+'</div>';
+      h+='<div style="font-size:12px;color:var(--pink);">👤 '+(s.booking?s.booking.hunter:'')+'</div></div>';
+    });
+  } else {
+    h+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:4px;">Alle Tårne ledige ✅</div>';
+  }
+  h+='</div>';
+
+  const nextH=hunts.filter(x=>x.date>=today).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  h+='<div class="card"><div class="card-title">📅 Næste jagt</div>';
+  if(nextH){
+    h+='<div style="font-size:17px;color:var(--text);">'+fmtDate(nextH.date)+'</div>';
+    h+='<div style="font-size:13px;color:var(--green);margin-top:3px;text-transform:uppercase;">'+nextH.type+'</div>';
+    if(nextH.note) h+='<div style="font-size:12px;color:var(--text3);margin-top:4px;">📌 '+nextH.note+'</div>';
+    h+='<div style="font-size:12px;color:var(--text3);margin-top:4px;">👥 '+((nextH.signups||[]).length)+' tilmeldte</div>';
+  } else {
+    h+='<div style="font-size:13px;color:var(--text3);">Ingen kommende jagter</div>';
+  }
+  h+='</div>';
+
+  if(kills.length){
+    h+='<div class="card"><div class="card-title">🎯 Seneste nedlagte</div>';
+    kills.slice(0,3).forEach(k=>{
+      const ac=ANIMAL_COLORS[k.animal]||'var(--green)';
+      const sn=(stands.find(s=>s.id===k.standId)||{}).name||'Ukendt';
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2);">';
+      h+='<div style="width:10px;height:10px;background:'+ac+';border-radius:50%;flex-shrink:0;"></div>';
+      h+='<div style="flex:1;"><div style="font-size:13px;font-weight:600;">'+k.animal+(k.weight?' · '+k.weight+' kg':'')+'</div>';
+      h+='<div style="font-size:11px;color:var(--text3);">'+k.hunter+' · '+sn+'</div></div></div>';
+    });
+    h+='</div>';
+  }
+
+  const unread=Object.values(DB.chat||{}).filter(m=>m.user!==currentUser&&!m.read).length;
+  if(unread>0){
+    h+='<div onclick="showView(\'chat\');closeMore();" style="background:linear-gradient(135deg,#1a2a1a,#1e3a1e);border:1px solid var(--green);border-radius:16px;padding:14px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:12px;">';
+    h+='<div style="font-size:28px;">💬</div><div style="flex:1;"><div style="font-size:14px;font-weight:600;">'+unread+' ulæst'+(unread>1?'e':'')+' besked'+(unread>1?'er':'')+'</div></div>';
+    h+='<div style="background:#c8302a;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">'+unread+'</div></div>';
+  }
+
+  const thisYear=new Date().getFullYear().toString();
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">';
+  h+='<div class="card" style="margin:0;text-align:center;padding:12px;"><div style="font-size:20px;font-weight:700;color:var(--gold);">'+kills.filter(k=>k.date&&k.date.startsWith(thisYear)).length+'</div><div style="font-size:10px;color:var(--text3);">Nedlagte i år</div></div>';
+  h+='<div class="card" style="margin:0;text-align:center;padding:12px;"><div style="font-size:20px;font-weight:700;color:var(--gold);">'+stands.filter(s=>s.lat).length+'</div><div style="font-size:10px;color:var(--text3);">Tårne placeret</div></div>';
+  h+='<div class="card" style="margin:0;text-align:center;padding:12px;"><div style="font-size:20px;font-weight:700;color:var(--gold);">'+hunts.filter(x=>x.date>=today).length+'</div><div style="font-size:10px;color:var(--text3);">Kommende jagter</div></div>';
+  h+='</div>';
+
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">';
+  h+='<button onclick="openKillModal()" style="padding:16px;background:var(--green2);border:1px solid var(--green);border-radius:14px;color:var(--text);font-size:14px;cursor:pointer;"><div style="font-size:26px;margin-bottom:4px;">🎯</div>Registrer vildt</button>';
+  h+='<button onclick="showView(\'Tårne\')" style="padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:14px;cursor:pointer;"><div style="font-size:26px;margin-bottom:4px;">🌲</div>Check ind</button>';
+  h+='</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">';
+  h+='<button onclick="openGallery()" style="padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:14px;cursor:pointer;"><div style="font-size:26px;margin-bottom:4px;">📸</div>Foto galleri</button>';
+  h+='<button onclick="showView(\'chat\');closeMore();" style="padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:14px;cursor:pointer;"><div style="font-size:26px;margin-bottom:4px;">💬</div>Beskeder</button>';
+  h+='</div>';
+  h+='<button onclick="renderDashboard()" style="width:100%;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;color:var(--text3);font-size:13px;cursor:pointer;margin-bottom:20px;">🔄 Opdater</button>';
+
+  el.innerHTML=h;
+  try{
+    var wc=localStorage.getItem('tj_weather');
+    if(wc){ var wcd=JSON.parse(wc); var wel=document.getElementById('dash-weather'); if(wel&&wcd.html) wel.innerHTML=wcd.html; }
+  }catch(e){}
+  setTimeout(loadWeather, 100);
+}
+
+async function loadWeather(){
+  const el=document.getElementById('dash-weather');
+  if(!el) return;
+  try{
+    const cached=localStorage.getItem('tj_weather');
+    if(cached){ const c=JSON.parse(cached); if(Date.now()-c.ts<1800000){ el.innerHTML=c.html; return; } }
+  }catch(e){}
+  try{
+    const ctrl=new AbortController();
+    setTimeout(()=>ctrl.abort(),6000);
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=56.3466&longitude=10.7802&current=temperature_2m,windspeed_10m,winddirection_10m,weathercode&daily=sunrise,sunset&timezone=Europe%2FCopenhagen&forecast_days=1',{signal:ctrl.signal});
+    if(!r.ok) return;
+    const d=await r.json();
+    const cur=d.current, daily=d.daily;
+    const ft=t=>t?t.split('T')[1].substring(0,5):'--:--';
+    const sr=ft(daily.sunrise&&daily.sunrise[0]), ss=ft(daily.sunset&&daily.sunset[0]);
+    const temp=Math.round(cur.temperature_2m)+'°C';
+    const wind=Math.round(cur.windspeed_10m)+' km/t';
+    const deg=cur.winddirection_10m||0;
+    const wi={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',51:'🌦️',61:'🌧️',71:'🌨️',80:'🌦️',95:'⛈️'};
+    const icon=wi[cur.weathercode]||'🌤️';
+    const nm=new Date().getHours()*60+new Date().getMinutes();
+    const srm=sr!=='--:--'?parseInt(sr)*60+parseInt(sr.split(':')[1]):0;
+    const ssm=ss!=='--:--'?parseInt(ss)*60+parseInt(ss.split(':')[1]):0;
+    let sun='';
+    if(nm<srm){const df=srm-nm;sun='🌄 Solopgang om '+(df>60?Math.floor(df/60)+'t ':'')+df%60+'m';}
+    else if(nm<ssm){const df=ssm-nm;sun='🌇 Solnedgang om '+(df>60?Math.floor(df/60)+'t ':'')+df%60+'m';}
+    else sun='Solen er nede';
+    const html='<div style="font-size:36px;">'+icon+'</div>'+
+      '<div style="flex:1;"><div style="font-size:22px;font-weight:700;color:var(--gold);">'+temp+'</div>'+
+      '<div style="font-size:12px;color:var(--text2);">💨 '+wind+' <span style="display:inline-block;transform:rotate('+deg+'deg);">↑</span></div>'+
+      '<div style="font-size:11px;color:var(--text3);margin-top:3px;">'+sun+'</div></div>'+
+      '<div style="text-align:right;font-size:12px;color:var(--text3);">🌄 '+sr+'<br>🌇 '+ss+'</div>';
+    localStorage.setItem('tj_weather',JSON.stringify({html,ts:Date.now()}));
+    const wel=document.getElementById('dash-weather');
+    if(wel) wel.innerHTML=html;
+  }catch(e){}
+}
+
+// ── Tårne ────────────────────────────────────────────────────────
+function renderTårne(){
+  const el=document.getElementById('Tårne-list');
+  if(!el) return;
+  if(!stands.length){
+    el.innerHTML='<div class="empty">'+(firebaseLoaded?'Ingen Tårne. Tryk ＋ for at tilføje.':'🔄 Henter Tårne...')+'</div>';
+    return;
+  }
+  const favs=DB.favorites||{};
+  const sorted=[...stands].sort((a,b)=>{
+    const af=favs[currentUser+'_'+a.id]?1:0, bf=favs[currentUser+'_'+b.id]?1:0;
+    return bf-af||a.id-b.id;
+  });
+  el.innerHTML=sorted.map(s=>{
+    const bk=s.booking, isFav=favs[currentUser+'_'+s.id];
+    let btns='<button onclick="toggleFav('+s.id+')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;cursor:pointer;">'+(isFav?'⭐':'☆')+'</button>';
+    if(isAdmin()){
+      btns+='<button onclick="openTårneEdit('+s.id+')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text2);font-size:12px;cursor:pointer;">✏️</button>';
+      btns+='<button onclick="deleteStand('+s.id+')" style="background:var(--red2);border:1px solid var(--red);border-radius:8px;padding:8px 10px;color:#f4d0d0;font-size:12px;cursor:pointer;">🗑</button>';
+    }
+    btns+='<button onclick="placeTorn('+s.id+')" style="background:'+(s.lat?'var(--bg3)':'rgba(61,122,82,.3)')+';border:1px solid '+(s.lat?'var(--border)':'var(--green)')+';border-radius:8px;padding:8px 10px;font-size:14px;cursor:pointer;">'+(s.lat?'🗺':'📍')+'</button>';
+    return '<div class="card"><div style="display:flex;align-items:center;gap:10px;">'+
+      '<div style="width:40px;height:40px;background:'+(bk?'var(--pink)':'var(--gold)')+';color:var(--bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;">'+s.id+'</div>'+
+      '<div style="flex:1;"><div style="font-size:15px;font-weight:700;color:var(--text);">'+s.name+'</div>'+
+      '<div style="font-size:12px;color:'+(bk?'var(--pink)':'var(--green)')+';">'+(bk?'🔴 '+bk.hunter+(bk.time?' kl.'+bk.time:''):s.lat?'🟢 Ledig':'⚠️ Ikke placeret')+'</div></div>'+
+      btns+'</div></div>';
+  }).join('');
+}
+
+function openAddStand(){
+  document.getElementById('as-name').value='';
+  openModal('add-stand-modal');
+}
+
+async function saveNewStand(){
+  const name=document.getElementById('as-name').value.trim();
+  if(!name){toast('Skriv et navn');return;}
+  const id=nextStandId++;
+  const s={id,name,lat:null,lng:null,booking:null};
+  stands.push(s);
+  DB.stands[id]=s;
+  await fbWrite('stands/'+id,s);
+  await fbWrite('nextStandId',nextStandId);
+  closeModal('add-stand-modal');
+  renderTårne();
+  toast('✅ '+name+' oprettet!');
+}
+
+function openTårneEdit(id){
+  const s=stands.find(x=>x.id===id);
+  if(!s) return;
+  editingStandId=id;
+  document.getElementById('te-name').value=s.name;
+  openModal('Tårne-edit-modal');
+}
+
+async function saveTårnedit(){
+  const s=stands.find(x=>x.id===editingStandId);
+  if(!s) return;
+  const name=document.getElementById('te-name').value.trim();
+  if(!name){toast('Skriv et navn');return;}
+  s.name=name;
+  DB.stands[s.id]=s;
+  updMarker(s);
+  await fbWrite('stands/'+s.id,s);
+  closeModal('Tårne-edit-modal');
+  renderTårne();
+  toast('✅ Navn gemt');
+}
+
+async function deleteStand(id){
+  const s=stands.find(x=>x.id===id);
+  if(!s) return;
+  showConfirm('Slet torn '+s.name+'?',async()=>{
+    if(s.marker) map.removeLayer(s.marker);
+    stands=stands.filter(x=>x.id!==id);
+    delete DB.stands[id];
+    await fbWrite('stands/'+id,null);
+    renderTårne();
+    toast('🗑 Torn slettet');
+  });
+}
+
+async function toggleFav(id){
+  if(!DB.favorites) DB.favorites={};
+  const key=currentUser+'_'+id;
+  DB.favorites[key]=!DB.favorites[key];
+  if(!DB.favorites[key]) delete DB.favorites[key];
+  await fbWrite('favorites/'+key,DB.favorites[key]||null);
+  renderTårne();
+}
+
+let checkingStand=null;
+function openCheckin(id){
+  const s=stands.find(x=>x.id===id);
+  if(!s) return;
+  checkingStand=s;
+  const now=new Date();
+  document.getElementById('ci-time').value=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('ci-title').textContent='📍 '+s.name;
+  const bk=s.booking;
+  const statusEl=document.getElementById('ci-status');
+  const ciBtn=document.getElementById('ci-btn');
+  if(bk){
+    statusEl.innerHTML='<div style="font-size:32px;margin-bottom:8px;">🔴</div><div style="font-size:14px;color:var(--pink);">'+bk.hunter+' er tjekket ind'+(bk.time?' kl.'+bk.time:'')+'</div>';
+    if(bk.hunter===currentUser||isAdmin()){
+      ciBtn.textContent='✓ Check ud'; ciBtn.style.background='linear-gradient(135deg,var(--pink),#c030b0)';
+    } else {
+      ciBtn.style.display='none';
+    }
+  } else {
+    statusEl.innerHTML='<div style="font-size:32px;margin-bottom:8px;">🟢</div><div style="font-size:14px;color:var(--green);">Tårnet er ledigt</div>';
+    ciBtn.textContent='✓ Check ind'; ciBtn.style.background='linear-gradient(135deg,var(--gold),var(--gold2))'; ciBtn.style.display='';
+  }
+  openModal('checkin-modal');
+}
+
+async function doCheckin(){
+  if(!checkingStand) return;
+  const s=checkingStand;
+  const time=document.getElementById('ci-time').value;
+  if(s.booking&&(s.booking.hunter===currentUser||isAdmin())){
+    s.booking=null;
+    DB.stands[s.id]=s;
+    await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,booking:null});
+    updMarker(s);
+    renderTårne();
+    closeModal('checkin-modal');
+    toast('✅ Tjekket ud fra '+s.name);
+    logActivity(currentUser+' tjekket ud fra '+s.name);
+  } else if(!s.booking){
+    s.booking={hunter:currentUser,time};
+    DB.stands[s.id]=s;
+    await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,booking:{hunter:currentUser,time}});
+    updMarker(s);
+    if('vibrate' in navigator) navigator.vibrate([100,50,100]);
+    renderTårne();
+    closeModal('checkin-modal');
+    toast('✅ Tjekket ind på '+s.name+' kl.'+time);
+    logActivity(currentUser+' tjekket ind på '+s.name);
+  }
+}
+
+async function saveOneSt(s){
+  DB.stands[s.id]={...s,marker:undefined};
+  await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,booking:s.booking||null});
+}
+
+// ── SKYDELOG ─────────────────────────────────────────────────────
+function openKillModal(){
+  editingKillId=null;
+  const now=new Date();
+  document.getElementById('k-date').value=now.toISOString().split('T')[0];
+  document.getElementById('k-hunter').innerHTML=getHunters().map(n=>'<option'+(n===currentUser?' selected':'')+'>'+n+'</option>').join('');
+  document.getElementById('k-stand').innerHTML='<option value="">— Vælg torn —</option>'+stands.map(s=>'<option value="'+s.id+'">'+s.name+'</option>').join('');
+  document.getElementById('k-weight').value='';
+  document.getElementById('k-note').value='';
+  openModal('kill-modal');
+}
+
+async function saveKill(){
+  const animal=document.getElementById('k-animal').value;
+  const hunter=document.getElementById('k-hunter').value;
+  const standId=parseInt(document.getElementById('k-stand').value)||null;
+  const date=document.getElementById('k-date').value;
+  const weight=document.getElementById('k-weight').value;
+  const note=document.getElementById('k-note').value.trim();
+  const photoFile=document.getElementById('k-photo').files[0];
+  let photo='';
+  if(photoFile){
+    photo=await new Promise(res=>{
+      const r=new FileReader();
+      r.onload=()=>res(r.result);
+      r.readAsDataURL(photoFile);
+    });
+  }
+  const id=editingKillId||Date.now();
+  const k={id,animal,hunter,standId,date,weight:weight?parseFloat(weight):null,note,photo};
+  if(!DB.kills) DB.kills={};
+  DB.kills[id]=k;
+  kills=Object.values(DB.kills).sort((a,b)=>(b.id||0)-(a.id||0));
+  await fbWrite('kills/'+id,k);
+  closeModal('kill-modal');
+  renderKills();
+  logActivity(currentUser+' registrerede '+animal+(weight?' ('+weight+'kg)':''));
+  toast('✅ '+animal+' registreret!');
+}
+
+function renderKills(){
+  const el=document.getElementById('kill-list');
+  if(!el) return;
+  var ks=document.getElementById('kill-search'); var q=ks?ks.value.toLowerCase():'';
+  let list=kills;
+  if(q) list=kills.filter(k=>(k.hunter||'').toLowerCase().includes(q)||(k.animal||'').toLowerCase().includes(q)||(k.note||'').toLowerCase().includes(q));
+  if(!list.length){
+    el.innerHTML='<div class="empty">'+(q?'Ingen resultater for "'+q+'"':firebaseLoaded?'Ingen registreringer endnu.':'🔄 Henter skydelog...')+'</div>';
+    return;
+  }
+  el.innerHTML=list.map(k=>{
+    const ac=ANIMAL_COLORS[k.animal]||'var(--green)';
+    const em=ANIMAL_EMOJI[k.animal]||'🎯';
+    const sn=(stands.find(s=>s.id===k.standId)||{}).name||'Ukendt';
+    const delBtn=isAdmin()||k.hunter===currentUser?'<button onclick="deleteKill('+k.id+')" style="background:var(--red2);border:1px solid var(--red);border-radius:8px;padding:6px 10px;color:#f4d0d0;font-size:12px;cursor:pointer;">🗑</button>':'';
+    let h='<div class="card" style="border-left:4px solid '+ac+';">';
+    if(k.photo) h+='<img src="'+k.photo+'" style="width:100%;height:160px;object-fit:cover;border-radius:10px;margin-bottom:12px;">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+    h+='<div style="display:flex;align-items:center;gap:10px;">';
+    h+='<div style="width:42px;height:42px;background:'+ac+'22;border:2px solid '+ac+';border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;">'+em+'</div>';
+    h+='<div><div style="font-size:17px;font-weight:700;color:'+ac+';">'+k.animal+(k.weight?' · '+k.weight+' kg':'')+'</div></div></div>'+delBtn+'</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">';
+    h+='<div style="background:var(--bg3);border-radius:8px;padding:8px;"><div style="font-size:10px;color:var(--text3);">JÆGER</div><div style="font-size:13px;font-weight:600;">'+k.hunter+'</div></div>';
+    h+='<div style="background:var(--bg3);border-radius:8px;padding:8px;"><div style="font-size:10px;color:var(--text3);">TORN</div><div style="font-size:13px;font-weight:600;">'+sn+'</div></div>';
+    h+='</div>';
+    h+='<div style="background:var(--bg3);border-radius:8px;padding:8px;">';
+    h+='<div style="font-size:10px;color:var(--text3);">DATO</div><div style="font-size:13px;">'+k.date+'</div></div>';
+    if(k.note) h+='<div style="margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px;border-left:3px solid '+ac+';"><div style="font-size:12px;color:var(--text3);font-style:italic;">"'+k.note+'"</div></div>';
+    h+='</div>';
+    return h;
+  }).join('');
+}
+
+async function deleteKill(id){
+  showConfirm('Slet denne registrering?',async()=>{
+    delete DB.kills[id];
+    kills=Object.values(DB.kills).sort((a,b)=>(b.id||0)-(a.id||0));
+    await fbWrite('kills/'+id,null);
+    renderKills();
+    toast('🗑 Slettet');
+  });
+}
+
+function openGallery(){
+  const pk=kills.filter(k=>k.photo);
+  if(!pk.length){toast('Ingen fotos endnu');return;}
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9000;overflow-y:auto;padding:16px;';
+  const hdr=document.createElement('div');
+  hdr.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;';
+  hdr.innerHTML='<div style="font-size:18px;color:var(--gold);">📸 Galleri ('+pk.length+')</div>';
+  const cb=document.createElement('button');
+  cb.style.cssText='background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 14px;font-size:14px;cursor:pointer;';
+  cb.textContent='✕ Luk'; cb.onclick=()=>ov.remove();
+  hdr.appendChild(cb);
+  const grid=document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px;';
+  pk.forEach(k=>{
+    const card=document.createElement('div');
+    card.style.cssText='border-radius:12px;overflow:hidden;background:var(--bg2);border:1px solid var(--border);';
+    const img=document.createElement('img');
+    img.src=k.photo; img.style.cssText='width:100%;aspect-ratio:1;object-fit:cover;display:block;';
+    const info=document.createElement('div');
+    info.style.cssText='padding:8px;';
+    info.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--gold);">'+k.animal+(k.weight?' - '+k.weight+'kg':'')+'</div><div style="font-size:11px;color:var(--text3);">'+k.hunter+' - '+(k.date||'')+'</div>';
+    card.appendChild(img); card.appendChild(info); grid.appendChild(card);
+  });
+  ov.appendChild(hdr); ov.appendChild(grid); document.body.appendChild(ov);
+}
+
+// ── JAGTER ───────────────────────────────────────────────────────
+function setJagtView(v){
+  jagtView=v;
+  document.getElementById('jagt-liste-btn').style.background=v==='liste'?'var(--gold)':'var(--bg2)';
+  document.getElementById('jagt-liste-btn').style.color=v==='liste'?'var(--bg)':'var(--text3)';
+  document.getElementById('jagt-kal-btn').style.background=v==='kalender'?'var(--gold)':'var(--bg2)';
+  document.getElementById('jagt-kal-btn').style.color=v==='kalender'?'var(--bg)':'var(--text3)';
+  renderHunts();
+}
+
+function renderHunts(){
+  const el=document.getElementById('hunt-list');
+  if(!el) return;
+  if(jagtView==='kalender'){renderKalender();return;}
+  if(!hunts.length){el.innerHTML='<div class="empty">'+(firebaseLoaded?'Ingen jagter planlagt.':'🔄 Henter jagter...')+'</div>';return;}
+  const today=new Date().toISOString().split('T')[0];
+  el.innerHTML=hunts.map(h=>{
+    const past=h.date<today;
+    const signed=(h.signups||[]).includes(currentUser);
+    let btns=!past?'<button onclick="toggleSignup(\''+h.id+'\')" style="flex:1;padding:10px;background:'+(signed?'var(--red2)':'var(--green2)')+';border:1px solid '+(signed?'var(--red)':'var(--green)')+';border-radius:10px;color:var(--text);font-size:13px;cursor:pointer;">'+(signed?'✗ Frameld':'✓ Tilmeld')+'</button>':'';
+    if(isAdmin()) btns+='<button onclick="deleteHunt(\''+h.id+'\')" style="padding:10px 14px;background:var(--red2);border:1px solid var(--red);border-radius:10px;color:#f4d0d0;font-size:13px;cursor:pointer;">🗑</button>';
+    return '<div class="card" style="'+(past?'opacity:.5':'')+'"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><div style="font-size:16px;font-weight:700;">'+fmtDate(h.date)+'</div></div>'+
+      '<div style="font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">'+h.type+'</div>'+
+      (h.note?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">📌 '+h.note+'</div>':'')+
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">👥 '+((h.signups||[]).length)+' tilmeldte'+(signed?' (inkl. dig)':'')+'</div>'+
+      '<div style="display:flex;gap:8px;">'+btns+'</div></div>';
+  }).join('');
+}
+
+function renderKalender(){
+  const el=document.getElementById('hunt-list');
+  const now=new Date();
+  const months=['Januar','Februar','Marts','April','Maj','Juni','Juli','August','September','Oktober','November','December'];
+  let h='';
+  for(let m=0;m<3;m++){
+    const dt=new Date(now.getFullYear(),now.getMonth()+m,1);
+    const mn=dt.getMonth(), yr=dt.getFullYear();
+    const days=new Date(yr,mn+1,0).getDate();
+    const first=(new Date(yr,mn,1).getDay()+6)%7;
+    h+='<div class="card"><div class="card-title" style="text-align:center;margin-bottom:12px;">'+months[mn]+' '+yr+'</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
+    ['M','T','O','T','F','L','S'].forEach(d=>h+='<div style="font-size:10px;color:var(--text3);font-weight:700;padding:4px 0;">'+d+'</div>');
+    for(let i=0;i<first;i++) h+='<div></div>';
+    for(let d=1;d<=days;d++){
+      const ds=yr+'-'+String(mn+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const hunt=hunts.find(x=>x.date===ds);
+      const isToday=ds===now.toISOString().split('T')[0];
+      h+='<div style="padding:5px 2px;border-radius:6px;background:'+(hunt?'var(--gold)':isToday?'var(--bg3)':'transparent')+';color:'+(hunt?'var(--bg)':'var(--text2)')+';font-size:12px;font-weight:'+(hunt?700:400)+';cursor:'+(hunt?'pointer':'default')+';">'+d+'</div>';
+    }
+    h+='</div></div>';
+  }
+  el.innerHTML=h;
+}
+
+async function saveHunt(){
+  const date=document.getElementById('h-date').value;
+  const type=document.getElementById('h-type').value;
+  const note=document.getElementById('h-note').value.trim();
+  if(!date){toast('Vælg en dato');return;}
+  const id='h_'+Date.now();
+  const h={id,date,type,note,signups:[]};
+  if(!DB.hunts) DB.hunts={};
+  DB.hunts[id]=h;
+  hunts=Object.values(DB.hunts).filter(x=>x&&x.date).sort((a,b)=>a.date.localeCompare(b.date));
+  await fbWrite('hunts/'+id,h);
+  closeModal('hunt-modal');
+  renderHunts();
+  logActivity(currentUser+' oprettede jagt '+fmtDate(date));
+  toast('✅ Jagt tilføjet!');
+}
+
+async function toggleSignup(hid){
+  const h=hunts.find(x=>x.id===hid);
+  if(!h) return;
+  if(!h.signups) h.signups=[];
+  const idx=h.signups.indexOf(currentUser);
+  if(idx===-1) h.signups.push(currentUser);
+  else h.signups.splice(idx,1);
+  DB.hunts[hid]=h;
+  await fbWrite('hunts/'+hid+'/signups',h.signups);
+  renderHunts();
+  toast(idx===-1?'✅ Tilmeldt!':'✅ Frameldt!');
+}
+
+async function deleteHunt(hid){
+  showConfirm('Slet denne jagt?',async()=>{
+    delete DB.hunts[hid];
+    hunts=Object.values(DB.hunts).filter(x=>x&&x.date).sort((a,b)=>a.date.localeCompare(b.date));
+    await fbWrite('hunts/'+hid,null);
+    renderHunts();
+    toast('🗑 Jagt slettet');
+  });
+}
+
+// ── VEJR ─────────────────────────────────────────────────────────
+async function loadVejr(){
+  const el=document.getElementById('vejr-content');
+  if(!el) return;
+  try{
+    const ctrl=new AbortController();
+    setTimeout(()=>ctrl.abort(),8000);
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=56.3466&longitude=10.7802&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,weathercode,precipitation&hourly=temperature_2m,weathercode&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FCopenhagen&forecast_days=5',{signal:ctrl.signal});
+    if(!r.ok){el.innerHTML='<div class="empty">Vejr utilgængeligt</div>';return;}
+    const d=await r.json();
+    const cur=d.current;
+    const daily=d.daily;
+    const wi={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',51:'🌦️',61:'🌧️',71:'🌨️',80:'🌦️',95:'⛈️'};
+    const icon=wi[cur.weathercode]||'🌤️';
+    const ft=t=>t?t.split('T')[1].substring(0,5):'--:--';
+    const dirs=['N','NØ','Ø','SØ','S','SV','V','NV'];
+    const dirStr=dirs[Math.round(cur.winddirection_10m/45)%8];
+    let h='<div class="card"><div style="display:flex;align-items:center;gap:16px;">';
+    h+='<div style="font-size:56px;">'+icon+'</div>';
+    h+='<div><div style="font-size:36px;font-weight:700;color:var(--gold);">'+Math.round(cur.temperature_2m)+'°C</div>';
+    h+='<div style="font-size:14px;color:var(--text2);">💨 '+Math.round(cur.windspeed_10m)+' km/t '+dirStr+'</div>';
+    h+='<div style="font-size:13px;color:var(--text3);">💧 '+cur.relative_humidity_2m+'% fugt</div></div></div>';
+    h+='<div style="display:flex;justify-content:space-around;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);">';
+    h+='<div style="text-align:center;"><div style="font-size:12px;color:var(--text3);">Solopgang</div><div style="font-size:16px;color:var(--gold);">🌄 '+ft(daily.sunrise&&daily.sunrise[0])+'</div></div>';
+    h+='<div style="text-align:center;"><div style="font-size:12px;color:var(--text3);">Solnedgang</div><div style="font-size:16px;color:var(--gold);">🌇 '+ft(daily.sunset&&daily.sunset[0])+'</div></div>';
+    h+='</div></div>';
+    h+='<div class="card"><div class="card-title">5-dages prognose</div>';
+    for(let i=0;i<5;i++){
+      const dt=new Date(daily.time[i]+'T12:00:00');
+      const day=dt.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short'});
+      const ic=wi[daily.weathercode[i]]||'🌤️';
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2);">';
+      h+='<div style="font-size:22px;">'+ic+'</div>';
+      h+='<div style="flex:1;font-size:13px;">'+day+'</div>';
+      h+='<div style="font-size:13px;color:var(--text3);">'+Math.round(daily.temperature_2m_min[i])+'°</div>';
+      h+='<div style="font-size:13px;color:var(--text);font-weight:600;margin-left:4px;">'+Math.round(daily.temperature_2m_max[i])+'°</div>';
+      if(daily.precipitation_sum[i]>0) h+='<div style="font-size:12px;color:#4a90d9;margin-left:6px;">💧'+daily.precipitation_sum[i].toFixed(1)+'mm</div>';
+      h+='</div>';
+    }
+    h+='</div>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<div class="empty">Vejr utilgængeligt</div>';}
+}
+
+// ── CHAT ─────────────────────────────────────────────────────────
+function buildChatTabs(){
+  const ct=document.getElementById('chat-private-tabs');
+  if(!ct) return;
+  const others=getHunters().filter(n=>n!==currentUser);
+  ct.innerHTML=others.map(name=>{
+    const ch=getChatKey(currentUser,name);
+    const active=activeChatChannel===ch;
+    const unread=Object.values(DB.chat||{}).filter(m=>m.channel===ch&&m.user!==currentUser&&!m.read).length;
+    return '<button onclick="switchChat(\''+ch+'\')" style="background:'+(active?'var(--green2)':'var(--bg2)')+';color:'+(active?'var(--text)':'var(--text3)')+';border:1px solid '+(active?'var(--green)':'var(--border)')+';border-radius:20px;padding:7px 12px;font-size:12px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;">'+(unread>0?'<span style="width:8px;height:8px;background:#c8302a;border-radius:50%;display:inline-block;flex-shrink:0;"></span>':'🔒')+' '+name+'</button>';
+  }).join('');
+  const allBtn=document.getElementById('chat-alle-btn');
+  if(allBtn){
+    allBtn.style.background=activeChatChannel==='alle'?'var(--gold)':'var(--bg2)';
+    allBtn.style.color=activeChatChannel==='alle'?'var(--bg)':'var(--text3)';
+    allBtn.style.border=activeChatChannel==='alle'?'none':'1px solid var(--border)';
+  }
+}
+
+function getChatKey(a,b){ return 'privat_'+[a,b].sort().join('_'); }
+
+function switchChat(ch){
+  activeChatChannel=ch;
+  buildChatTabs();
+  renderChat();
+  clearChatBadge();
+}
+
+function renderChat(){
+  const el=document.getElementById('chat-messages');
+  if(!el) return;
+  const msgs=Object.values(DB.chat||{}).filter(m=>(m.channel||'alle')===activeChatChannel).sort((a,b)=>a.ts-b.ts);
+  if(!msgs.length){el.innerHTML='<div class="empty">Ingen beskeder endnu. Skriv den første!</div>';return;}
+  el.innerHTML=msgs.map(m=>{
+    const isMe=m.user===currentUser;
+    return '<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+';margin-bottom:14px;">'+
+      '<div style="font-size:11px;color:'+(isMe?'var(--gold)':'var(--text2)')+';font-weight:700;margin-bottom:3px;">'+(isMe?'Du':'👤 '+m.user)+' <span style="font-weight:400;color:var(--text3);font-size:10px;">· '+m.time+'</span></div>'+
+      '<div style="background:'+(isMe?'var(--green2)':'var(--bg2)')+';border:1px solid '+(isMe?'var(--green)':'var(--border)')+';border-radius:'+(isMe?'16px 16px 4px 16px':'16px 16px 16px 4px')+';padding:10px 14px;max-width:80%;font-size:14px;">'+m.msg+'</div></div>';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+async function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const msg=inp.value.trim();
+  if(!msg||!currentUser) return;
+  inp.value='';
+  const m={id:Date.now(),user:currentUser,msg,channel:activeChatChannel,ts:Date.now(),time:new Date().toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'})};
+  if(!DB.chat) DB.chat={};
+  DB.chat[m.id]=m;
+  renderChat();
+  await fbWrite('chat/'+m.id,m);
+}
+
+function clearChatBadge(){
+  const badge=document.getElementById('chat-badge');
+  if(badge){badge.style.display='none';}
+  let changed=false;
+  Object.values(DB.chat||{}).forEach(m=>{
+    if((m.channel||'alle')===activeChatChannel&&m.user!==currentUser&&!m.read){
+      m.read=true; changed=true; fbWrite('chat/'+m.id,m);
+    }
+  });
+  if(changed) buildChatTabs();
+}
+
+// ── VAGTPLAN ─────────────────────────────────────────────────────
+function openVagtModal(){
+  document.getElementById('vagt-date').value='';
+  document.getElementById('vagt-note').value='';
+  document.getElementById('vagt-hunter').innerHTML=getHunters().map(n=>'<option>'+n+'</option>').join('');
+  openModal('vagt-modal');
+}
+
+function renderVagt(){
+  const el=document.getElementById('vagt-list');
+  if(!el) return;
+  const vagter=Object.values(DB.vagtplan||{}).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!vagter.length){el.innerHTML='<div class="empty">Ingen vagter planlagt.</div>';return;}
+  el.innerHTML=vagter.map(v=>{
+    const delBtn=isAdmin()?'<button onclick="deleteVagt(\''+v.id+'\')" style="padding:6px 10px;background:var(--red2);border:1px solid var(--red);border-radius:8px;color:#f4d0d0;font-size:11px;cursor:pointer;">🗑</button>':'';
+    return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:start;">'+
+      '<div><div class="card-title" style="margin-bottom:4px;">'+fmtDate(v.date)+'</div>'+
+      '<div style="font-size:13px;color:var(--text2);">👤 '+v.hunter+'</div>'+
+      (v.note?'<div style="font-size:12px;color:var(--text3);margin-top:4px;">📌 '+v.note+'</div>':'')+
+      '</div>'+delBtn+'</div></div>';
+  }).join('');
+}
+
+async function saveVagt(){
+  const date=document.getElementById('vagt-date').value;
+  const hunter=document.getElementById('vagt-hunter').value;
+  const note=document.getElementById('vagt-note').value.trim();
+  if(!date){toast('Vælg dato');return;}
+  const id='v_'+Date.now();
+  const v={id,date,hunter,note};
+  if(!DB.vagtplan) DB.vagtplan={};
+  DB.vagtplan[id]=v;
+  await fbWrite('vagtplan/'+id,v);
+  closeModal('vagt-modal');
+  renderVagt();
+  toast('✅ Vagt tilføjet!');
+}
+
+async function deleteVagt(id){
+  showConfirm('Slet vagt?',async()=>{
+    delete DB.vagtplan[id];
+    await fbWrite('vagtplan/'+id,null);
+    renderVagt();
+    toast('🗑 Vagt slettet');
+  });
+}
+
+// ── KVOTER ───────────────────────────────────────────────────────
+function renderKvoter(){
+  const el=document.getElementById('kvote-list');
+  if(!el) return;
+  const kvoter=Object.values(DB.kvoter||{});
+  if(!kvoter.length){el.innerHTML='<div class="empty">Ingen kvoter oprettet.</div>';return;}
+  el.innerHTML=kvoter.map(k=>{
+    const harvested=kills.filter(x=>x.animal===k.animal).length;
+    const pct=Math.min(100,Math.round(harvested/Math.max(1,k.antal)*100));
+    const delBtn=isAdmin()?'<button onclick="deleteKvote(\''+k.id+'\')" style="float:right;padding:4px 8px;background:var(--red2);border:1px solid var(--red);border-radius:6px;color:#f4d0d0;font-size:11px;cursor:pointer;">🗑</button>':'';
+    return '<div class="card">'+delBtn+
+      '<div class="card-title" style="margin-bottom:6px;">'+k.animal+' - '+k.saeson+'</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span>Nedlagt: '+harvested+'</span><span>Kvote: '+k.antal+'</span></div>'+
+      '<div style="background:var(--bg3);border-radius:8px;height:14px;overflow:hidden;"><div style="width:'+pct+'%;background:linear-gradient(90deg,var(--green),var(--gold));height:100%;border-radius:8px;transition:width 1s;"></div></div>'+
+      '<div style="font-size:11px;color:var(--text3);margin-top:4px;text-align:right;">'+pct+'%</div></div>';
+  }).join('');
+}
+
+async function saveKvote(){
+  const animal=document.getElementById('kv-animal').value;
+  const antal=parseInt(document.getElementById('kv-antal').value)||0;
+  const saeson=document.getElementById('kv-saeson').value||new Date().getFullYear()+'/'+(new Date().getFullYear()+1);
+  const id='kv_'+Date.now();
+  const k={id,animal,antal,saeson};
+  if(!DB.kvoter) DB.kvoter={};
+  DB.kvoter[id]=k;
+  await fbWrite('kvoter/'+id,k);
+  closeModal('kvote-modal');
+  renderKvoter();
+  toast('✅ Kvote gemt!');
+}
+
+async function deleteKvote(id){
+  showConfirm('Slet kvote?',async()=>{
+    delete DB.kvoter[id];
+    await fbWrite('kvoter/'+id,null);
+    renderKvoter();
+  });
+}
+
+// ── STATISTIK ────────────────────────────────────────────────────
+function setStatYear(yr){
+  statYear=yr;
+  ['0','1','-1'].forEach(y=>{
+    const btn=document.getElementById('stat-btn-'+y);
+    if(btn){
+      const active=String(yr)===y;
+      btn.style.background=active?'var(--gold)':'var(--bg2)';
+      btn.style.color=active?'var(--bg)':'var(--text3)';
+      btn.style.border=active?'none':'1px solid var(--border)';
+      btn.style.fontWeight=active?'700':'400';
+    }
+  });
+  renderStats();
+}
+
+function renderStats(){
+  const el=document.getElementById('stat-content');
+  if(!el) return;
+  const thisYear=new Date().getFullYear();
+  let fk=kills;
+  if(statYear===0) fk=kills.filter(k=>k.date&&k.date.startsWith(String(thisYear)));
+  else if(statYear===1) fk=kills.filter(k=>k.date&&k.date.startsWith(String(thisYear-1)));
+  if(!fk.length){el.innerHTML='<div class="empty">Ingen data for denne periode.</div>';return;}
+  const byAnimal={}, byHunter={}, byStand={};
+  fk.forEach(k=>{
+    byAnimal[k.animal]=(byAnimal[k.animal]||0)+1;
+    byHunter[k.hunter]=(byHunter[k.hunter]||0)+1;
+    const sn=(stands.find(s=>s.id===k.standId)||{}).name||'Ukendt';
+    byStand[sn]=(byStand[sn]||0)+1;
+  });
+  function bar(obj,color){
+    return Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+      const pct=Math.round(v/fk.length*100);
+      return '<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><div style="font-size:13px;color:var(--text2);">'+k+'</div><div style="font-size:12px;color:var(--text3);">'+v+' ('+pct+'%)</div></div>'+
+        '<div style="background:var(--bg3);border-radius:8px;height:12px;overflow:hidden;"><div style="width:'+pct+'%;background:'+color+';height:100%;border-radius:8px;"></div></div></div>';
+    }).join('');
+  }
+  el.innerHTML='<div class="card"><div style="font-size:28px;font-weight:700;color:var(--gold);">'+fk.length+'</div><div style="font-size:13px;color:var(--text3);">nedlagte dyr</div></div>'+
+    '<div class="card"><div class="card-title">Efter dyreart</div>'+bar(byAnimal,'var(--green)')+'</div>'+
+    '<div class="card"><div class="card-title">Efter jæger</div>'+bar(byHunter,'var(--gold)')+'</div>'+
+    '<div class="card"><div class="card-title">Efter torn</div>'+bar(byStand,'var(--pink)')+'</div>';
+}
+
+// ── ADMIN ────────────────────────────────────────────────────────
+async function loadAndRenderAdmin(){
+  try{
+    const r=await fetch(FB+'/members.json');
+    if(r.ok){const d=await r.json();if(d) DB.members=d;}
+  }catch(e){}
+  renderMembers();
+  renderActivity();
+}
+
+function renderMembers(){
+  const el=document.getElementById('member-list');
+  if(!el) return;
+  const members=getMembers();
+  el.innerHTML=Object.entries(members).map(([name,m])=>
+    '<div style="background:var(--bg3);border-radius:14px;padding:12px 14px;margin-bottom:8px;">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'+
+    '<div style="width:38px;height:38px;background:linear-gradient(135deg,var(--green2),var(--green3));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">'+(m.admin?'👑':'👤')+'</div>'+
+    '<div style="flex:1;"><div style="font-size:15px;font-weight:700;">'+name+'</div><div style="font-size:11px;color:var(--text3);">'+(m.admin?'Administrator':'Jæger')+'</div></div></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;">'+
+    '<button onclick="editMember(\''+name+'\')" style="flex:1;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;cursor:pointer;">✏️ Skift kode</button>'+
+    '<button onclick="resetMemberPass(\''+name+'\')" style="flex:1;padding:10px;background:rgba(212,168,67,.1);border:1px solid var(--border);border-radius:10px;color:var(--gold);font-size:13px;cursor:pointer;">🔑 Nulstil</button>'+
+    (name!==currentUser?'<button onclick="deleteMember(\''+name+'\')" style="padding:10px 14px;background:var(--red2);border:1px solid var(--red);border-radius:10px;color:#f4d0d0;font-size:13px;cursor:pointer;">🗑</button>':'')
+    +'</div></div>'
+  ).join('');
+  updateExtraAreaBtns();
+}
+
+function editMember(name){
+  editingMember=name;
+  document.getElementById('mm-title').textContent='✏️ Rediger '+name;
+  document.getElementById('mm-name').value=name;
+  document.getElementById('mm-name').disabled=true;
+  document.getElementById('mm-pass').value='';
+  document.getElementById('mm-admin').value=getMembers()[name].admin?'1':'0';
+  openModal('member-modal');
+}
+
+function openMemberModal(){
+  editingMember=null;
+  document.getElementById('mm-title').textContent='👤 Tilføj medlem';
+  document.getElementById('mm-name').value='';
+  document.getElementById('mm-name').disabled=false;
+  document.getElementById('mm-pass').value='';
+  document.getElementById('mm-admin').value='0';
+  openModal('member-modal');
+}
+
+async function saveMember(){
+  const name=document.getElementById('mm-name').value.trim();
+  const pass=document.getElementById('mm-pass').value.trim();
+  const admin=document.getElementById('mm-admin').value==='1';
+  if(!name){toast('Skriv navn');return;}
+  if(!DB.members) DB.members={...DEFAULT_MEMBERS};
+  const existing=DB.members[name]||{};
+  if(editingMember){
+    if(pass){ const hash=await hashPass(pass); DB.members[name]={...existing,hash,admin}; }
+    else DB.members[name]={...existing,admin};
+  } else {
+    if(!pass){toast('Adgangskode kræves');return;}
+    const hash=await hashPass(pass);
+    DB.members[name]={hash,admin};
+  }
+  await fbWrite('members',DB.members);
+  buildLoginSelect();
+  renderMembers();
+  closeModal('member-modal');
+  document.getElementById('mm-name').disabled=false;
+  toast('✅ '+name+' gemt!');
+  logActivity(currentUser+(editingMember?' opdaterede ':' tilføjede ')+name);
+  editingMember=null;
+}
+
+async function resetMemberPass(name){
+  showConfirm('Nulstil kode for '+name+'?',async()=>{
+    const tempPass=name.toLowerCase()+'123';
+    const hash=await hashPass(tempPass);
+    if(!DB.members) DB.members={...DEFAULT_MEMBERS};
+    DB.members[name]={...DB.members[name],hash};
+    await fbWrite('members',DB.members);
+    renderMembers();
+    toast('✅ Kode nulstillet til: '+tempPass);
+    logActivity(currentUser+' nulstillede kode for '+name);
+  });
+}
+
+async function deleteMember(name){
+  showConfirm('Slet '+name+'?',async()=>{
+    if(!DB.members) DB.members={...DEFAULT_MEMBERS};
+    delete DB.members[name];
+    await fbWrite('members',DB.members);
+    buildLoginSelect();
+    renderMembers();
+    toast('🗑 '+name+' slettet');
+    logActivity(currentUser+' slettede '+name);
+  });
+}
+
+function renderActivity(){
+  const el=document.getElementById('activity-list');
+  if(!el) return;
+  const acts=DB.activity||[];
+  if(!acts.length){el.innerHTML='<div class="empty">Ingen aktivitet.</div>';return;}
+  el.innerHTML=acts.slice(0,20).map(a=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border2);"><div style="font-size:13px;color:var(--text2);">'+a.msg+'</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;margin-left:8px;">'+a.time+'</div></div>').join('');
+}
+
+async function sendAdminMsg(){
+  const txt=document.getElementById('adminmsg-text').value.trim();
+  if(!txt){toast('Skriv en besked');return;}
+  const msg={text:txt,from:currentUser,ts:Date.now(),time:new Date().toLocaleString('da-DK',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})};
+  DB.adminMsg=msg;
+  await fbWrite('adminMsg',msg);
+  closeModal('adminmsg-modal');
+  toast('📢 Besked sendt!');
+  logActivity(currentUser+' sendte vigtig besked');
+}
+
+// ── SKIFT KODE ───────────────────────────────────────────────────
+async function doChangePass(){
+  const oldPass=document.getElementById('cp-old').value;
+  const newPass=document.getElementById('cp-new').value;
+  const conf=document.getElementById('cp-confirm').value;
+  if(!oldPass||!newPass||!conf){toast('Udfyld alle felter');return;}
+  if(newPass!==conf){toast('Koder er ikke ens');return;}
+  if(newPass.length<4){toast('Min. 4 tegn');return;}
+  const oldHash=await hashPass(oldPass);
+  const m=getMembers()[currentUser];
+  if(!(m.hash?oldHash===m.hash:m.pass===oldPass)){toast('Forkert nuværende kode');return;}
+  const newHash=await hashPass(newPass);
+  if(!DB.members) DB.members={...DEFAULT_MEMBERS};
+  DB.members[currentUser]={...DB.members[currentUser],hash:newHash};
+  await fbWrite('members',DB.members);
+  closeModal('changepass-modal');
+  toast('✅ Adgangskode ændret!');
+}
+
+// ── EKSPORT ──────────────────────────────────────────────────────
+function exportKillsCSV(){
+  if(!kills.length){toast('Ingen data');return;}
+  let csv='Dato,Jaeger,Dyreart,Vaegt,Torn,Note'+String.fromCharCode(13,10);
+  kills.forEach(k=>{
+    const sn=(stands.find(s=>s.id===k.standId)||{}).name||'';
+    csv+=[k.date||'',k.hunter||'',k.animal||'',k.weight||'',sn,k.note||''].join(',')+String.fromCharCode(13,10);
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='trustrup-skydelog.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✅ Eksporteret!');
+}
+
+async function rydGamleData(){
+  if(!isAdmin()){toast('⛔ Kun administrator');return;}
+  const cutoff=new Date();
+  cutoff.setFullYear(cutoff.getFullYear()-1);
+  const cutStr=cutoff.toISOString().split('T')[0];
+  const old=kills.filter(k=>k.date&&k.date<cutStr);
+  if(!old.length){toast('Ingen data ældre end 1 år');return;}
+  showConfirm('Slet '+old.length+' registreringer ældre end 1 år?',async()=>{
+    for(const k of old){delete DB.kills[k.id];await fbWrite('kills/'+k.id,null);}
+    kills=Object.values(DB.kills).sort((a,b)=>(b.id||0)-(a.id||0));
+    renderKills();
+    toast('🗑 '+old.length+' registreringer slettet');
+    logActivity(currentUser+' ryddede '+old.length+' gamle registreringer');
+  });
+}
+
+// ── POLLING ──────────────────────────────────────────────────────
+window.addEventListener('resize', function(){
+  if(map && document.getElementById('v-kort').classList.contains('active')){
+    map.invalidateSize(true);
+  }
+});
+
+function startPolling(){
+  setInterval(function(){
+    fetch(FB+'/chat.json').then(function(r){
+      if(!r.ok) return;
+      return r.json();
+    }).then(function(d){
+      if(!d) return;
+      var changed = JSON.stringify(d)!==JSON.stringify(DB.chat);
+      if(!changed) return;
+      DB.chat=d;
+      var unread=Object.values(d).filter(function(m){return m.user!==currentUser&&!m.read;}).length;
+      var badge=document.getElementById('chat-badge');
+      var onChat=document.getElementById('v-chat').classList.contains('active');
+      if(badge){ badge.style.display=unread>0&&!onChat?'flex':'none'; if(unread>0) badge.textContent=unread; }
+      if(onChat){buildChatTabs();renderChat();}
+    }).catch(function(){});
+  },6000);
+  setInterval(function(){
+    fetch(FB+'/stands.json').then(function(r){
+      return r.ok?r.json():null;
+    }).then(function(d){
+      if(!d) return;
+      DB.stands=d;
+      var wasChanged=false;
+      Object.values(d).forEach(function(s){
+        var ex=stands.find(function(e){return e.id===s.id;});
+        if(ex&&JSON.stringify(ex.booking)!==JSON.stringify(s.booking)){
+          ex.booking=s.booking; updMarker(ex); wasChanged=true;
+        }
+      });
+      if(wasChanged){
+        if(document.getElementById('v-Tårne').classList.contains('active')) renderTårne();
+        if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard();
+      }
+    }).catch(function(){});
+  },20000);
+}
+
+// ── START ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', initFirebase);
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</body>
+</html>
