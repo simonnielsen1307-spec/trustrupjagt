@@ -105,6 +105,8 @@ nav.hidden{transform:translateY(100%);}
 .lr{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:var(--text2);}
 .lr input{width:16px;height:16px;cursor:pointer;accent-color:var(--gold);}
 .ld{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
+.lr label{display:flex;align-items:center;gap:7px;cursor:pointer;}
+#lp-b .lr{padding:3px 0;}
 
 /* STAND PANEL */
 #mb{position:absolute;bottom:12px;left:12px;right:12px;z-index:1000;background:rgba(8,15,8,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:none;font-size:13px;color:var(--text2);}
@@ -188,8 +190,9 @@ nav::-webkit-scrollbar{display:none;}
     <div id="lp">
       <div id="lp-h" onclick="toggleLP()">🗺️ Kortlag <span id="lp-t">−</span></div>
       <div id="lp-b">
-        <div class="lr"><input type="checkbox" id="c0" checked><label for="c0"><div class="ld" style="background:#d8ceb8;border:1px solid #907848;"></div> Vejkort</label></div>
-        <div class="lr"><input type="checkbox" id="c1"><label for="c1"><div class="ld" style="background:#b8d4a0;border:1px solid #4a7a38;"></div> Topokort</label></div>
+        <div style="font-size:10px;color:var(--text3,#7a8a6a);letter-spacing:.5px;margin:2px 0 2px;">KORTTYPE</div>
+        <div id="base-layers"></div>
+        <div style="border-top:1px solid var(--border);margin:6px 0 4px;"></div>
         <div class="lr"><input type="checkbox" id="c4" checked><label for="c4"><div class="ld" style="background:rgba(200,60,160,.5);border:2px solid #a010a0;border-radius:50%;"></div> Jagtareal</label></div>
         <div class="lr"><input type="checkbox" id="c5" checked><label for="c5"><div class="ld" style="background:#4a90d9;border-radius:50%;"></div> Min position</label></div>
         <div id="area-btns" style="margin-top:4px;display:flex;flex-direction:column;gap:4px;"></div>
@@ -849,13 +852,41 @@ async function initFirebase(){
 }
 
 // ── MAP ──────────────────────────────────────────────────────────
-let lOSM, lTop, map;
+let map, BASES={}, aktivBase='vej';
+function buildBaseLayerList(){
+  const el=document.getElementById('base-layers'); if(!el) return;
+  el.innerHTML=Object.entries(BASES).map(([k,b])=>
+    '<div class="lr"><input type="radio" name="baselayer" id="bl-'+k+'" '+(k===aktivBase?'checked':'')+' onchange="setBaseLayer(\''+k+'\')">'+
+    '<label for="bl-'+k+'"><div class="ld" style="background:'+b.farve+';border:1px solid rgba(255,255,255,.25);"></div> '+b.navn+'</label></div>'
+  ).join('');
+}
+function setBaseLayer(k){
+  if(!map||!BASES[k]||k===aktivBase) return;
+  BASES[aktivBase].lag.forEach(l=>map.removeLayer(l));
+  BASES[k].lag.forEach(l=>{ l.addTo(map); l.bringToBack(); });
+  aktivBase=k;
+  try{ localStorage.setItem('tj_maplayer',k); }catch(e){}
+}
 function initMap(){
   if(map) return;
   if(typeof L === 'undefined'){ toast('⚠️ Kortbibliotek ikke indlæst - tjek internetforbindelse'); return; }
-  lOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
-  lTop = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17});
-  map  = L.map('map',{layers:[lOSM],zoomControl:false});
+  const esri='https://server.arcgisonline.com/ArcGIS/rest/services/';
+  BASES={
+    vej:   {navn:'Vejkort',        farve:'#d8ceb8', lag:[L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'})]},
+    sat:   {navn:'Satellit',       farve:'#3d5a2a', lag:[L.tileLayer(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,maxNativeZoom:18,attribution:'© Esri'})]},
+    hybrid:{navn:'Satellit + veje',farve:'#5a7a3a', lag:[L.tileLayer(esri+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,maxNativeZoom:18,attribution:'© Esri'}),
+                                                     L.tileLayer(esri+'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,maxNativeZoom:18}),
+                                                     L.tileLayer(esri+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,maxNativeZoom:18})]},
+    topo:  {navn:'Topokort',       farve:'#b8d4a0', lag:[L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:19,maxNativeZoom:17,attribution:'© OpenTopoMap'})]},
+    terraen:{navn:'Terræn',        farve:'#c9b98f', lag:[L.tileLayer(esri+'World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'© Esri'})]},
+    lys:   {navn:'Lyst',           farve:'#eeeeee', lag:[L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© CARTO'})]},
+    moerk: {navn:'Mørkt',          farve:'#2b2b2b', lag:[L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© CARTO'})]}
+  };
+  let valgt='vej';
+  try{ const v=localStorage.getItem('tj_maplayer'); if(v&&BASES[v]) valgt=v; }catch(e){}
+  map  = L.map('map',{layers:BASES[valgt].lag,zoomControl:false,attributionControl:false});
+  aktivBase=valgt;
+  buildBaseLayerList();
 }
 
 const nord=[];
@@ -882,15 +913,6 @@ function initMapLayers(){
     toast('✅ '+pn+' placeret!');
   });
 
-  ['c0','c1'].forEach(id=>{
-    const layers={c0:lOSM,c1:lTop};
-    document.getElementById(id).addEventListener('change',function(){
-      if(this.checked){
-        ['c0','c1'].forEach(o=>{ if(o!==id){ document.getElementById(o).checked=false; map.removeLayer(layers[o]); } });
-        map.addLayer(layers[id]);
-      } else map.removeLayer(layers[id]);
-    });
-  });
   document.getElementById('c4').addEventListener('change',function(){ this.checked?ag.addTo(map):map.removeLayer(ag); });
   document.getElementById('c5').addEventListener('change',function(){
     if(this.checked) startGPS();
