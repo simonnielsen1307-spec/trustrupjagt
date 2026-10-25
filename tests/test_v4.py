@@ -19,8 +19,8 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch()
         A=await page(b,'Simon'); B=await page(b,'Jón')
-        await A.get_by_text('✓ Tilmeld').tap(); await A.wait_for_timeout(500)
-        await A.get_by_text('Gæster & hunde').first.tap(); await A.wait_for_timeout(300)
+        await A.locator('#hunt-list').get_by_text('✓ Kommer').first.tap(); await A.wait_for_timeout(500)
+        await A.locator('#hunt-list').get_by_text('Gæster & hunde').first.tap(); await A.wait_for_timeout(300)
         await A.fill('#gd-gname','Peter Hansen'); await A.locator('#gd-modal .gd-add button').first.tap()
         await A.fill('#gd-gname','Ole'); await A.locator('#gd-modal .gd-add button').first.tap()
         await A.fill('#gd-dname','Bella'); await A.select_option('#gd-dtype','Apportør'); await A.locator('#gd-modal .gd-add button').nth(1).tap()

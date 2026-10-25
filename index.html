@@ -185,6 +185,19 @@ nav::-webkit-scrollbar{display:none;}
 .gd-add{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
 .gd-add input,.gd-add select{flex:1;min-width:120px;padding:11px 12px;background:rgba(17,19,17,.5);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:var(--fl),sans-serif;}
 .gd-add button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--green);background:var(--green2);color:var(--text);font-weight:700;cursor:pointer;}
+
+body:not(.is-admin) .admin-only{display:none!important;}
+.rsvp{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--bg3);margin:8px 0 6px;}
+.rsvp span{display:block;height:100%;}
+.rsvp .y{background:#3ddc84}.rsvp .n{background:#ff5c5c}.rsvp .u{background:#5a615a}
+.rsvp-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--text2);}
+.rsvp-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:0;}
+.rsvp-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;}
+.rsvp-col{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:8px 10px;min-width:0;}
+.rsvp-col h4{margin:0 0 4px;font:700 12px var(--fp),sans-serif;letter-spacing:.5px;text-transform:uppercase;}
+.rsvp-col div{font-size:13px;line-height:1.5;overflow-wrap:anywhere;}
+.rsvp-col small{display:block;font-size:11px;color:var(--text3);}
+@media (max-width:360px){.rsvp-cols{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -285,7 +298,7 @@ nav::-webkit-scrollbar{display:none;}
 <div class="view" id="v-Tårne">
   <div class="view-header">
     <h2>🌲 Tårne</h2>
-    <button class="btn-add" onclick="openAddStand()">＋ Tilføj torn</button>
+    <button class="btn-add admin-only" onclick="openAddStand()">＋ Tilføj torn</button>
   </div>
   <div class="view-inner" id="Tårne-list"></div>
 </div>
@@ -1348,6 +1361,54 @@ async function setStandDir(s,v){
 // Gemmes pr. jæger under hunts/<id>/extra/<navn>, så ingen overskriver hinanden.
 let gdHunt=null, gdDraft=null;
 // Hent altid nyeste tilmeldingsliste før vi skriver, så to der tilmelder sig samtidig ikke sletter hinanden
+async function readList(path){
+  try{ const r=await fetch(FB+'/'+path+'.json',{cache:'no-store'}); if(r.ok){ const d=await r.json(); return (Array.isArray(d)?d:(d?Object.values(d):[])).filter(Boolean); } }catch(e){}
+  return null;
+}
+// status: 'yes' = kommer, 'no' = kan ikke, null = intet svar. Henter nyeste lister før der skrives.
+async function setResponse(h,status){
+  const [su,de]=await Promise.all([readList('hunts/'+h.id+'/signups'),readList('hunts/'+h.id+'/declines')]);
+  let yes=(su||h.signups||[]).filter(u=>u&&u!==currentUser), no=(de||h.declines||[]).filter(u=>u&&u!==currentUser);
+  if(status==='yes') yes.push(currentUser);
+  if(status==='no') no.push(currentUser);
+  h.signups=yes; h.declines=no;
+  const a=await fbWrite('hunts/'+h.id+'/signups',yes), b=await fbWrite('hunts/'+h.id+'/declines',no);
+  if(status!=='yes'&&h.extra&&h.extra[currentUser]){ delete h.extra[currentUser]; await fbWrite('hunts/'+h.id+'/extra/'+currentUser,null); }
+  DB.hunts[h.id]=h;
+  return a!==false&&b!==false;
+}
+async function declineHunt(hid){
+  const h=hunts.find(x=>x.id===hid); if(!h) return;
+  const was=(h.declines||[]).includes(currentUser);
+  await setResponse(h,was?null:'no');
+  renderHunts(); if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard();
+  toast(was?'Svar fjernet':'✅ Meldt afbud – de andre kan se du ikke kommer');
+  if(!was) logActivity(currentUser+' kan ikke komme '+fmtDMY(h.date));
+}
+function huntResp(h){
+  const all=getHunters(), yes=(h.signups||[]).filter(Boolean), no=(h.declines||[]).filter(u=>u&&!yes.includes(u));
+  const none=all.filter(u=>!yes.includes(u)&&!no.includes(u));
+  return {all,yes,no,none};
+}
+function rsvpHtml(h,full){
+  const r=huntResp(h), n=Math.max(1,r.yes.length+r.no.length+r.none.length), t=huntTotals(h);
+  const pct=x=>(x/n*100).toFixed(1)+'%';
+  let html='<div class="rsvp" role="img" aria-label="'+r.yes.length+' kommer, '+r.no.length+' kan ikke, '+r.none.length+' har ikke svaret">'+
+    '<span class="y" style="width:'+pct(r.yes.length)+'"></span><span class="n" style="width:'+pct(r.no.length)+'"></span><span class="u" style="width:'+pct(r.none.length)+'"></span></div>'+
+    '<div class="rsvp-legend"><span><i style="background:#3ddc84"></i>'+r.yes.length+' kommer</span><span><i style="background:#ff5c5c"></i>'+r.no.length+' kan ikke</span><span><i style="background:#5a615a"></i>'+r.none.length+' ikke svaret</span>'+
+    (t.guests?'<span>👤 '+t.guests+' gæst'+(t.guests===1?'':'er')+'</span>':'')+(t.dogs?'<span>🐕 '+t.dogs+' hund'+(t.dogs===1?'':'e')+'</span>':'')+'</div>';
+  if(!full) return html;
+  const col=(title,color,list,extra)=>'<div class="rsvp-col"><h4 style="color:'+color+'">'+title+'</h4><div>'+(list.length?list.map(u=>esc(u)+(u===currentUser?' (dig)':'')+(extra?extra(u):'')).join('<br>'):'<span style="color:var(--text3)">–</span>')+'</div></div>';
+  const ex=u=>{ const e=huntExtra(h,u); const p=[]; if(e.guests.length) p.push('+'+e.guests.length+' gæst'+(e.guests.length>1?'er':'')); if(e.dogs.length) p.push('🐕 '+e.dogs.length); return p.length?'<small>'+p.join(' · ')+'</small>':''; };
+  return html+'<div class="rsvp-cols">'+col('Kommer','#3ddc84',r.yes,ex)+col('Kan ikke','#ff8c8c',r.no)+col('Ikke svaret','var(--text3)',r.none)+'</div>';
+}
+function myRespButtons(h){
+  const yes=(h.signups||[]).includes(currentUser), no=(h.declines||[]).includes(currentUser);
+  const b=(txt,fn,bg,bd)=>'<button onclick="'+fn+'(\''+h.id+'\')" style="flex:1;padding:10px;min-height:44px;background:'+bg+';border:1px solid '+bd+';border-radius:10px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer;">'+txt+'</button>';
+  if(yes) return b('👥 Gæster &amp; hunde','openGuestsDogs','var(--bg3)','var(--border)')+b('✗ Kan ikke alligevel','declineHunt','var(--red2)','var(--red)');
+  if(no) return b('✓ Kommer alligevel','toggleSignup','var(--green2)','var(--green)')+'<div style="flex:1;align-self:center;font-size:12px;color:#ff8c8c;text-align:center;">Du har meldt afbud</div>';
+  return b('✓ Kommer','toggleSignup','var(--green2)','var(--green)')+b('✗ Kan ikke','declineHunt','var(--red2)','var(--red)');
+}
 async function updateSignups(h,add){
   let cur=h.signups||[];
   try{ const r=await fetch(FB+'/hunts/'+h.id+'/signups.json',{cache:'no-store'}); if(r.ok){ const d=await r.json(); cur=Array.isArray(d)?d:(d?Object.values(d):[]); } }catch(e){}
@@ -1398,7 +1459,7 @@ async function saveGuestsDogs(){
   const val=(gdDraft.guests.length||gdDraft.dogs.length||gdDraft.note)?gdDraft:null;
   if(!h.extra) h.extra={};
   if(val) h.extra[currentUser]=val; else delete h.extra[currentUser];
-  if(!(h.signups||[]).includes(currentUser)) await updateSignups(h,true);
+  if(!(h.signups||[]).includes(currentUser)) await setResponse(h,'yes');
   DB.hunts[h.id]=h;
   const ok=await fbWrite('hunts/'+h.id+'/extra/'+currentUser,val);
   closeModal('gd-modal'); renderHunts();
@@ -1568,6 +1629,7 @@ function registerSW(){
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(r=>{swReg=r;}).catch(()=>{}); }
 }
 function afterLogin(){
+  document.body.classList.toggle('is-admin',!!isAdmin());
   try{ myAlertId=localStorage.getItem('tj_myalert'); }catch(e){}
   registerSW(); setTimeout(updateNotifyBtn,0);
   var crown = isAdmin()?' 👑':'';
@@ -1823,9 +1885,10 @@ function updateExtraAreaBtns(){
 
 function addMarker(s){
   if(!map) return;
-  s.marker=L.marker([s.lat,s.lng],{icon:mkIcon(s,false),draggable:true}).addTo(map);
+  s.marker=L.marker([s.lat,s.lng],{icon:mkIcon(s,false),draggable:isAdmin()}).addTo(map);
   s.marker.on('click',()=>openCheckin(s.id));
   s.marker.on('dragend',e=>{
+    if(!isAdmin()){ e.target.setLatLng([s.lat,s.lng]); return; }
     s.lat=e.target.getLatLng().lat;
     s.lng=e.target.getLatLng().lng;
     saveOneSt(s);
@@ -1848,6 +1911,7 @@ function renderStands(){
 }
 
 function placeTorn(id){
+  if(!isAdmin()){ toast('🔒 Tårne er låst – kun admin kan flytte dem'); return; }
   const s=stands.find(x=>x.id===id);
   if(!s) return;
   placingStand=s;
@@ -2214,7 +2278,7 @@ function renderDashboard(){
   const mine=stands.find(s=>s.booking&&s.booking.hunter===currentUser);
   h+='<div class="quick-row"><button class="quick-btn primary" onclick="openKillModal()"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v4M12 18v4M2 12h4M18 12h4\"/></svg>Meld nedlagt</button>'+
     '<button class="quick-btn" onclick="quickCheckin()"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 21L10 9M17 21L14 9M6 9h12M8 4h8l1 5H7z\"/></svg>'+(mine?'Tjek ud':'Tjek ind')+'</button></div>';
-  h+='<button class="sos-btn" onclick="sosPress()">🆘 Nødknap</button>';
+  h+='<button class="sos-btn" onclick="sosPress()">🆘 Nødknap</button><!--SOS-->';
   h+=jagttidSummaryHtml();
   h+=windSummaryHtml();
   h+=feederSummaryHtml();
@@ -2239,19 +2303,20 @@ function renderDashboard(){
   h+='</div>';
 
   const nextH=hunts.filter(x=>x.date>=today).sort((a,b)=>a.date.localeCompare(b.date))[0];
-  h+='<div class="card"><div class="card-title">📅 Næste jagt</div>';
+  h+='<!--NH--><div class="card"><div class="card-title">📅 Næste jagt</div>';
   if(nextH){
     h+='<div style="font-size:17px;color:var(--text);">'+fmtDate(nextH.date)+'</div>';
     h+='<div style="font-size:13px;color:var(--green);margin-top:3px;text-transform:uppercase;">'+nextH.type+'</div>';
     if(nextH.note) h+='<div style="font-size:12px;color:var(--text3);margin-top:4px;">📌 '+nextH.note+'</div>';
-    h+='<div style="font-size:12px;color:var(--text3);margin-top:4px;">👥 '+huntTotalsTxt(nextH)+'</div>';
+    h+=rsvpHtml(nextH,true);
+    h+='<div style="display:flex;gap:8px;margin-top:10px;">'+myRespButtons(nextH)+'</div>';
     if(pjOnDate(nextH.date).length) h+='<div style="font-size:13px;color:#ffb0b0;margin-top:6px;">⚠️ Du har også: '+pjOnDate(nextH.date).map(p=>esc(p.name)).join(', ')+' 🔒</div>';
   } else {
     h+='<div style="font-size:13px;color:var(--text3);">Ingen kommende jagter</div>';
   }
   const nextP=getPrivate().filter(p=>pjEnd(p)>=today)[0];
   if(nextP) h+='<div onclick="jagtView=\'mine\';showView(\'jagt\');setJagtView(\'mine\')" style="cursor:pointer;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2);font-size:13px;color:#8cc4ff;">🔒 Din næste anden jagt: <b>'+esc(nextP.name)+'</b> · '+pjWhen(nextP)+'</div>';
-  h+='</div>';
+  h+='</div><!--/NH-->';
 
   if(kills.length){
     h+='<div class="card"><div class="card-title">🎯 Seneste nedlagte</div>';
@@ -2290,6 +2355,7 @@ function renderDashboard(){
   h+='</div>';
   h+='<button onclick="renderDashboard()" style="width:100%;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;color:var(--text3);font-size:13px;cursor:pointer;margin-bottom:20px;">🔄 Opdater</button>';
 
+  { const a=h.indexOf('<!--NH-->'), b=h.indexOf('<!--/NH-->'); if(a>-1&&b>a){ const nh=h.slice(a,b+10); h=h.slice(0,a)+h.slice(b+10); h=h.replace('<!--SOS-->','<!--SOS-->'+nh); } }
   el.innerHTML=h;
   try{
     var wc=localStorage.getItem('tj_weather');
@@ -2357,7 +2423,7 @@ function renderTårne(){
       btns+='<button onclick="openTårneEdit('+s.id+')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text2);font-size:12px;cursor:pointer;">✏️</button>';
       btns+='<button onclick="deleteStand('+s.id+')" style="background:var(--red2);border:1px solid var(--red);border-radius:8px;padding:8px 10px;color:#f4d0d0;font-size:12px;cursor:pointer;">🗑</button>';
     }
-    btns+='<button onclick="placeTorn('+s.id+')" style="background:'+(s.lat?'var(--bg3)':'rgba(61,122,82,.3)')+';border:1px solid '+(s.lat?'var(--border)':'var(--green)')+';border-radius:8px;padding:8px 10px;font-size:14px;cursor:pointer;">'+(s.lat?'🗺':'📍')+'</button>';
+    if(isAdmin()) btns+='<button onclick="placeTorn('+s.id+')" style="background:'+(s.lat?'var(--bg3)':'rgba(61,122,82,.3)')+';border:1px solid '+(s.lat?'var(--border)':'var(--green)')+';border-radius:8px;padding:8px 10px;font-size:14px;cursor:pointer;">'+(s.lat?'🗺':'📍')+'</button>';
     return '<div class="card"><div style="display:flex;align-items:center;gap:10px;">'+
       '<div style="width:40px;height:40px;background:'+(bk?'var(--pink)':'var(--gold)')+';color:var(--bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;">'+s.id+'</div>'+
       '<div style="flex:1;"><div style="font-size:15px;font-weight:700;color:var(--text);">'+s.name+'</div>'+
@@ -2368,6 +2434,7 @@ function renderTårne(){
 }
 
 function openAddStand(){
+  if(!isAdmin()){ toast('🔒 Kun admin kan oprette tårne'); return; }
   document.getElementById('as-name').value='';
   openModal('add-stand-modal');
 }
@@ -2635,14 +2702,14 @@ function renderHunts(){
   el.innerHTML=hunts.map(h=>{
     const past=h.date<today;
     const signed=(h.signups||[]).includes(currentUser);
-    let btns=!past&&signed?'<button onclick="openGuestsDogs(\''+h.id+'\')" style="flex:1;padding:10px;min-height:44px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer;">👥 Gæster &amp; hunde</button>':'';
-    btns+=!past?'<button onclick="toggleSignup(\''+h.id+'\')" style="flex:1;padding:10px;background:'+(signed?'var(--red2)':'var(--green2)')+';border:1px solid '+(signed?'var(--red)':'var(--green)')+';border-radius:10px;color:var(--text);font-size:13px;cursor:pointer;">'+(signed?'✗ Frameld':'✓ Tilmeld')+'</button>':'';
+    let btns=!past?myRespButtons(h):'';
     if(isAdmin()) btns+='<button onclick="deleteHunt(\''+h.id+'\')" style="padding:10px 14px;background:var(--red2);border:1px solid var(--red);border-radius:10px;color:#f4d0d0;font-size:13px;cursor:pointer;">🗑</button>';
     return '<div class="card" style="'+(past?'opacity:.5':'')+'"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><div style="font-size:16px;font-weight:700;">'+fmtDate(h.date)+'</div></div>'+
       '<div style="font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">'+h.type+'</div>'+
       (h.note?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">📌 '+h.note+'</div>':'')+
-      '<div style="font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:600;">👥 '+huntTotalsTxt(h)+(signed?' · inkl. dig':'')+'</div>'+
+      rsvpHtml(h,false)+
       huntComersHtml(h)+
+      ((h.declines||[]).filter(Boolean).length?'<div style="font-size:12px;color:#ff8c8c;margin:-4px 0 10px;">Kan ikke: '+(h.declines||[]).filter(Boolean).map(esc).join(', ')+'</div>':'')+
       (!past&&pjOnDate(h.date).length?'<div style="font-size:13px;color:#ffb0b0;margin-bottom:8px;">⚠️ Du har også: '+pjOnDate(h.date).map(p=>esc(p.name)).join(', ')+' 🔒</div>':'')+
       '<div style="display:flex;gap:8px;">'+btns+'</div></div>';
   }).join('');
@@ -2701,9 +2768,8 @@ async function toggleSignup(hid,force){
     if(c.length){ showConfirm('Du har allerede '+c.map(p=>p.name).join(', ')+' den dag. Tilmeld alligevel?',()=>toggleSignup(hid,true)); return; }
   }
   const idx=(h.signups||[]).indexOf(currentUser);
-  await updateSignups(h,idx===-1);
-  if(idx!==-1&&h.extra&&h.extra[currentUser]){ delete h.extra[currentUser]; await fbWrite('hunts/'+hid+'/extra/'+currentUser,null); }
-  DB.hunts[hid]=h;
+  await setResponse(h,idx===-1?'yes':null);
+  if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard();
   renderHunts();
   toast(idx===-1?'✅ Tilmeldt!':'✅ Frameldt!');
 }
