@@ -50,6 +50,7 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 13. **Kortlag-panelet kunne ikke rulle** på telefonen (sprang tilbage): `overflow:hidden` stod efter `overflow-y:auto` i samme regel. Paneler over kortet: `overflow-y:auto; overscroll-behavior:contain` og `L.DomEvent.disableScrollPropagation`. Test med rigtige touch-bevægelser (`test_v3.py`).
 14. Vinddata kan mangle → tjek `typeof WIND.from==='number'` før brug, ellers går hele forsiden i stykker.
 15. **Tilmeldinger forsvandt** når to tilmeldte sig samtidig: hele `signups`-listen blev skrevet fra telefonens gamle kopi. Brug `setResponse(h,'yes'|'no'|null)` (henter nyeste lister først). Gem data pr. bruger i egne stier (`extra/<navn>`) i stedet for at overskrive fælles lister.
+16. **Tekst løb ud af kortmærker**: `L.divIcon` har fast 12×12 boks. Brug `iconSize:null, iconAnchor:[0,0]` og centrér mærket med `position:absolute; transform:translate(-50%,-50%)`.
 
 ## Sådan arbejder vi
 
@@ -70,6 +71,7 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 - 25-10-2026: Gæster & hunde på fællesjagter (pr. jæger, med note), samlet antal jægere/gæster/hunde på kort og forside, frameld fjerner også gæster/hunde. Test: `test_v4.py`.
 - 25-10-2026: Tårne låst (kun admin flytter/opretter). Svar på fællesjagt: Kommer / Kan ikke / Ikke svaret med samlet graf og navne i tre kolonner; næste jagt ligger øverst på forsiden. Test: `test_v5.py`.
 - 25-10-2026: Resultat fra fællesjagt (hvem skød hvad, antal skud; deltagere skriver for sig selv og egne gæster, admin for alle) + statistik for fællesjagter (skud pr. dyr, pr. jæger, jagt for jagt). Jagttid-kortet halveret, større tårnmærker. Test: `test_v6.py`.
+- 25-10-2026: Foder/kamera-mærker halv størrelse; tårnnavne holder sig inde i mærket.
 
 ## Idéer / ikke lavet endnu
 
