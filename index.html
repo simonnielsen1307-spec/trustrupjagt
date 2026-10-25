@@ -198,6 +198,23 @@ body:not(.is-admin) .admin-only{display:none!important;}
 .rsvp-col div{font-size:13px;line-height:1.5;overflow-wrap:anywhere;}
 .rsvp-col small{display:block;font-size:11px;color:var(--text3);}
 @media (max-width:360px){.rsvp-cols{grid-template-columns:1fr;}}
+
+.jt-mini{padding:10px 12px!important;}
+.jt-mini .card-title{margin-bottom:6px!important;font-size:15px!important;}
+.jt-mini .pill{padding:2px 7px;font-size:11px;margin:0 4px 4px 0;}
+/* større tårnmærker = lettere at ramme */
+.tm{min-height:34px;min-width:34px;padding:7px 12px!important;font-size:13px!important;border-width:2.5px!important;position:relative;}
+.tm::after{content:"";position:absolute;inset:-10px;border-radius:24px;}
+/* resultat fra fællesjagt */
+.res-row{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border2);font-size:13px;align-items:baseline;}
+.res-row b{min-width:0;flex:1;}
+.res-row span{color:var(--text3);white-space:nowrap;}
+.res-sum{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;margin:8px 0;color:var(--text2);}
+.res-sum b{font-family:var(--fp),sans-serif;font-size:18px;color:var(--text);margin-right:3px;}
+.stat-tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;}
+.stat-tbl th{text-align:right;font-weight:600;color:var(--text3);padding:4px 6px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+.stat-tbl th:first-child,.stat-tbl td:first-child{text-align:left;}
+.stat-tbl td{text-align:right;padding:6px;border-bottom:1px solid var(--border2);}
 </style>
 </head>
 <body>
@@ -581,6 +598,25 @@ body:not(.is-admin) .admin-only{display:none!important;}
     <button class="btn btn-g" onclick="saveGuestsDogs()">✓ Gem</button>
     <button class="btn btn-q" onclick="closeModal('gd-modal')">Annuller</button>
   </div>
+</div></div>
+
+<!-- Resultat fra fællesjagt -->
+<div class="overlay" id="res-modal">
+<div class="modal">
+  <h3 id="res-title">📋 Resultat</h3>
+  <div class="field"><label>Jæger</label><select id="res-who" onchange="resLoad()"></select></div>
+  <div class="field"><label>Skud brugt i alt</label><input type="number" id="res-shots" min="0" max="200" inputmode="numeric" placeholder="0"></div>
+  <div style="font-size:13px;color:var(--text2);margin:4px 0 6px;font-weight:700;">Nedlagt</div>
+  <div id="res-game"></div>
+  <div class="gd-add"><select id="res-animal"><option>Råbuk</option><option>Rå</option><option>Rålam</option><option>Kronvildt</option><option>Dåvildt</option><option>Sikavildt</option><option>Vildsvin</option><option>Ræv</option><option>Hare</option><option>Fasan</option><option>Agerhøne</option><option>Skovsneppe</option><option>Ringdue</option><option>Ænder</option><option>Gæs</option><option>Krage/skade</option><option>Mårhund</option><option>Andet</option></select>
+    <input type="number" id="res-count" min="1" max="50" value="1" inputmode="numeric" style="max-width:80px;min-width:70px;">
+    <button onclick="resAdd()">＋ Tilføj</button></div>
+  <div class="field" style="margin-top:10px;"><label>Note (valgfri)</label><input type="text" id="res-note" maxlength="100" placeholder="F.eks. anskudt ræv eftersøgt og fundet"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="resSave()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('res-modal')">Annuller</button>
+  </div>
+  <button id="res-del" onclick="resDelete()" style="display:none;width:100%;margin-top:10px;padding:12px;background:var(--red2);border:1px solid var(--red);border-radius:12px;color:#f4d0d0;font-size:14px;cursor:pointer;">🗑 Slet denne jægers resultat</button>
 </div></div>
 
 <!-- Torn navn modal -->
@@ -1082,11 +1118,13 @@ function addDays(ds,n){ const d=new Date(ds+'T12:00:00'); d.setDate(d.getDate()+
 function jtNext(name,from){ // næste dato arten åbner/lukker
   const open=jtOpen(name,from); for(let i=1;i<=370;i++){ const d=addDays(from,i); if(jtOpen(name,d)!==open) return {d,open:!open}; } return null; }
 function jtPeriodsTxt(e){ return e[1].map(p=>p[0].split('-').reverse().join('/')+'–'+(p[1]==='02-29'?'sidste feb':p[1].split('-').reverse().join('/'))).join(' og '); }
+const JT_SHORT={'Rå og rålam':'Rå/lam','Kronhjort (større end spidshjort)':'Kronhjort','Då og dåkalv':'Då/kalv','Sikahind og -kalv':'Sika hind/kalv','Vildsvin, orne':'Vildsvin orne','Vildsvin, so og grise':'Vildsvin so/grise','Krage og husskade':'Krage/skade'};
+const jtS=n=>JT_SHORT[n]||n;
 function jagttidSummaryHtml(){
   const t=todayStr(), open=JT.filter(e=>jtOpen(e[0],t)), soon=JT.filter(e=>!jtOpen(e[0],t)).map(e=>({e,n:jtNext(e[0],t)})).filter(x=>x.n&&x.n.open&&x.n.d<=addDays(t,21));
-  let h='<div class="card" onclick="showView(\'jagttider\')" style="cursor:pointer;"><div class="card-title">📆 Jagttid i dag</div>';
-  h+=open.length?open.map(e=>'<span class="pill on">'+esc(e[0])+'</span>').join(''):'<div style="font-size:13px;color:var(--text3);">Ingen af de almindelige arter har jagttid i dag.</div>';
-  if(soon.length) h+='<div style="font-size:12px;color:var(--text3);margin:4px 0 6px;">Åbner snart:</div>'+soon.map(x=>'<span class="pill soon">'+esc(x.e[0])+' '+fmtDMY(x.n.d).slice(0,5)+'</span>').join('');
+  let h='<div class="card jt-mini" onclick="showView(\'jagttider\')" style="cursor:pointer;"><div class="card-title">📆 Jagttid i dag <span style="font:500 12px var(--fl),sans-serif;color:var(--text3);text-transform:none;letter-spacing:0;">· '+open.length+' arter · tryk for alle</span></div>';
+  h+=open.length?open.slice(0,8).map(e=>'<span class="pill on">'+esc(jtS(e[0]))+'</span>').join('')+(open.length>8?'<span class="pill">+'+(open.length-8)+' flere</span>':''):'<div style="font-size:13px;color:var(--text3);">Ingen af de almindelige arter har jagttid i dag.</div>';
+  if(soon.length) h+='<span style="font-size:11px;color:var(--text3);margin-right:4px;">Snart:</span>'+soon.slice(0,3).map(x=>'<span class="pill soon">'+esc(jtS(x.e[0]))+' '+fmtDMY(x.n.d).slice(0,5)+'</span>').join('');
   return h+'</div>';
 }
 function renderJagttider(){
@@ -1465,6 +1503,88 @@ async function saveGuestsDogs(){
   closeModal('gd-modal'); renderHunts();
   if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard();
   if(ok!==false){ toast('✅ Gemt – '+huntTotalsTxt(h)); if(val) logActivity(currentUser+' tager '+(gdDraft.guests.length?gdDraft.guests.length+' gæst(er) ':'')+(gdDraft.dogs.length?gdDraft.dogs.length+' hund(e) ':'')+'med '+fmtDMY(h.date)); }
+}
+
+// ── RESULTAT FRA FÆLLESJAGT (hvad, hvem, skud) ─────────────────
+// hunts/<id>/result/<nøgle> = {name, shots, game:[{animal,count}], note, by, ts}
+let resHunt=null, resDraft=null;
+const resKey=n=>String(n).replace(/[.#$\[\]\/]/g,'_');
+function huntResults(h){ return Object.values((h&&h.result)||{}).filter(r=>r&&r.name); }
+function resTotals(list){ let shots=0,game=0; const by={}; list.forEach(r=>{ shots+=(+r.shots||0); (r.game||[]).filter(Boolean).forEach(g=>{ game+=(+g.count||0); by[g.animal]=(by[g.animal]||0)+(+g.count||0); }); }); return {shots,game,by}; }
+const fmtRatio=(a,b)=>b?(a/b).toFixed(1).replace('.',','):'–';
+function resultHtml(h){
+  const list=huntResults(h), t=resTotals(list), can=canReport(h);
+  if(!list.length&&!can) return '';
+  let html='<div style="margin:6px 0 10px;padding-top:8px;border-top:1px solid var(--border);"><div style="font:700 13px var(--fp),sans-serif;letter-spacing:.5px;text-transform:uppercase;color:var(--gold);">📋 Resultat</div>';
+  if(list.length){
+    html+='<div class="res-sum"><span><b>'+t.game+'</b>nedlagt</span><span><b>'+t.shots+'</b>skud</span><span><b>'+fmtRatio(t.shots,t.game)+'</b>skud pr. dyr</span></div>';
+    html+=list.sort((a,b)=>a.name.localeCompare(b.name,'da')).map(r=>{ const g=(r.game||[]).filter(Boolean);
+      return '<div class="res-row"><b>'+esc(r.name)+'</b><div style="flex:2;min-width:0;">'+(g.length?g.map(x=>(+x.count>1?x.count+' ':'')+esc(x.animal)).join(', '):'<span>intet nedlagt</span>')+(r.note?'<div style="font-size:11px;color:var(--text3);">💬 '+esc(r.note)+'</div>':'')+'</div><span>'+(+r.shots||0)+' skud</span></div>'; }).join('');
+  } else html+='<div style="font-size:12px;color:var(--text3);margin:6px 0;">Ingen har skrevet resultat endnu.</div>';
+  if(can) html+='<button onclick="openResult(\''+h.id+'\')" style="width:100%;margin-top:8px;padding:10px;min-height:44px;background:var(--bg3);border:1px dashed var(--gold);border-radius:10px;color:var(--gold);font-size:13px;font-weight:700;cursor:pointer;">＋ Skriv resultat (vildt og skud)</button>';
+  return html+'</div>';
+}
+function canReport(h){ return h.date<=todayStr()&&(isAdmin()||(h.signups||[]).includes(currentUser)); }
+function resPeople(h){ // hvem kan man skrive for
+  const out=[]; const add=n=>{ if(n&&!out.includes(n)) out.push(n); };
+  if(isAdmin()){ (h.signups||[]).forEach(add); (h.signups||[]).forEach(u=>huntExtra(h,u).guests.forEach(g=>add(g.name+' (gæst)'))); getHunters().forEach(add); }
+  else { add(currentUser); huntExtra(h,currentUser).guests.forEach(g=>add(g.name+' (gæst)')); }
+  return out;
+}
+function openResult(hid){
+  const h=hunts.find(x=>x.id===hid); if(!h) return;
+  resHunt=hid;
+  document.getElementById('res-title').textContent='📋 Resultat – '+fmtDMY(h.date);
+  const sel=document.getElementById('res-who');
+  sel.innerHTML=resPeople(h).map(n=>'<option>'+esc(n)+'</option>').join('');
+  sel.value=resPeople(h).includes(currentUser)?currentUser:sel.options[0].value;
+  resLoad(); openModal('res-modal');
+}
+function resLoad(){
+  const h=hunts.find(x=>x.id===resHunt); const name=document.getElementById('res-who').value;
+  const ex=(h.result||{})[resKey(name)];
+  resDraft=ex?JSON.parse(JSON.stringify({...ex,game:(ex.game||[]).filter(Boolean)})):{name,shots:'',game:[],note:''};
+  document.getElementById('res-shots').value=resDraft.shots===''?'':resDraft.shots;
+  document.getElementById('res-note').value=resDraft.note||'';
+  document.getElementById('res-del').style.display=ex?'':'none';
+  resRender();
+}
+function resRender(){
+  document.getElementById('res-game').innerHTML=resDraft.game.length?resDraft.game.map((g,i)=>'<div class="gd-item"><span>🦌 '+g.count+' × '+esc(g.animal)+'</span><button aria-label="Fjern" onclick="resDraft.game.splice('+i+',1);resRender()">✕</button></div>').join(''):'<div style="font-size:12px;color:var(--text3);margin-bottom:6px;">Intet nedlagt endnu – tilføj herunder, eller gem kun skud.</div>';
+}
+function resAdd(){
+  const a=document.getElementById('res-animal').value, c=Math.max(1,Math.min(50,parseInt(document.getElementById('res-count').value)||1));
+  const ex=resDraft.game.find(g=>g.animal===a); if(ex) ex.count+=c; else resDraft.game.push({animal:a,count:c});
+  document.getElementById('res-count').value=1; resRender();
+}
+async function resSave(){
+  const h=hunts.find(x=>x.id===resHunt); if(!h) return;
+  const name=document.getElementById('res-who').value;
+  const shots=Math.max(0,Math.min(200,parseInt(document.getElementById('res-shots').value)||0));
+  const val={name,shots,game:resDraft.game,note:document.getElementById('res-note').value.trim(),by:currentUser,ts:Date.now()};
+  if(!h.result) h.result={}; h.result[resKey(name)]=val; DB.hunts[h.id]=h;
+  const ok=await fbWrite('hunts/'+h.id+'/result/'+resKey(name),val);
+  closeModal('res-modal'); renderHunts();
+  if(ok!==false){ const t=resTotals([val]); toast('✅ Gemt: '+name+' – '+t.game+' nedlagt, '+shots+' skud'); logActivity(currentUser+' skrev resultat for '+name+' ('+fmtDMY(h.date)+')'); }
+}
+function resDelete(){
+  const h=hunts.find(x=>x.id===resHunt); const name=document.getElementById('res-who').value;
+  closeModal('res-modal');
+  showConfirm('Slet resultatet for '+name+'?',async()=>{ if(h.result) delete h.result[resKey(name)]; await fbWrite('hunts/'+h.id+'/result/'+resKey(name),null); renderHunts(); toast('Slettet'); });
+}
+function huntStatsHtml(inPeriod){
+  const hs=hunts.filter(h=>inPeriod(h.date)&&huntResults(h).length);
+  if(!hs.length) return '<div class="card"><div class="card-title">🎯 Fællesjagter</div><div style="font-size:13px;color:var(--text3);">Ingen resultater fra fællesjagter i perioden endnu. Efter en jagt: gå til Jagter og tryk "Skriv resultat".</div></div>';
+  const all=[]; hs.forEach(h=>huntResults(h).forEach(r=>all.push(r)));
+  const t=resTotals(all), per={};
+  all.forEach(r=>{ const k=r.name; per[k]=per[k]||{shots:0,game:0,hunts:0}; per[k].shots+=(+r.shots||0); per[k].hunts++; (r.game||[]).filter(Boolean).forEach(g=>per[k].game+=(+g.count||0)); });
+  const maxA=Math.max(1,...Object.values(t.by));
+  let h='<div class="card"><div class="card-title">🎯 Fællesjagter</div><div class="res-sum"><span><b>'+hs.length+'</b>jagter</span><span><b>'+t.game+'</b>nedlagt</span><span><b>'+t.shots+'</b>skud</span><span><b>'+fmtRatio(t.shots,t.game)+'</b>skud pr. dyr</span></div></div>';
+  h+='<div class="card"><div class="card-title">Vildt på fællesjagter</div>'+Object.entries(t.by).sort((a,b)=>b[1]-a[1]).map(([a,c])=>'<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>'+esc(a)+'</span><span style="font-variant-numeric:tabular-nums;">'+c+'</span></div><div style="background:var(--bg3);border-radius:6px;height:10px;overflow:hidden;"><div style="width:'+(c/maxA*100)+'%;height:100%;background:var(--green);"></div></div></div>').join('')+'</div>';
+  h+='<div class="card" style="overflow-x:auto;"><div class="card-title">Pr. jæger</div><table class="stat-tbl"><thead><tr><th>Jæger</th><th>Jagter</th><th>Nedlagt</th><th>Skud</th><th>Skud/dyr</th></tr></thead><tbody>'+
+    Object.entries(per).sort((a,b)=>b[1].game-a[1].game||a[1].shots-b[1].shots).map(([n,v])=>'<tr><td>'+esc(n)+'</td><td>'+v.hunts+'</td><td>'+v.game+'</td><td>'+v.shots+'</td><td>'+fmtRatio(v.shots,v.game)+'</td></tr>').join('')+'</tbody></table></div>';
+  h+='<div class="card"><div class="card-title">Jagt for jagt</div>'+hs.sort((a,b)=>b.date.localeCompare(a.date)).map(x=>{ const tt=resTotals(huntResults(x)); return '<div class="res-row"><b>'+fmtDMY(x.date)+' · '+esc(x.type||'')+'</b><span>'+tt.game+' dyr · '+tt.shots+' skud</span></div>'; }).join('')+'</div>';
+  return h;
 }
 
 // ── UTILS ────────────────────────────────────────────────────────
@@ -1899,7 +2019,7 @@ function mkIcon(s, active){
   const bk=s.booking;
   const defName='Torn '+s.id;
   const label=s.name&&s.name!==defName?s.name.substring(0,14):String(s.id);
-  return L.divIcon({className:'',html:'<div class="tm'+(bk?' bk':'')+(active?' sel':'')+'">'+label+windDot(s)+'</div>',iconAnchor:[20,15]});
+  return L.divIcon({className:'',html:'<div class="tm'+(bk?' bk':'')+(active?' sel':'')+'">'+label+windDot(s)+'</div>',iconAnchor:[24,18]});
 }
 
 function updMarker(s){
@@ -2704,13 +2824,14 @@ function renderHunts(){
     const signed=(h.signups||[]).includes(currentUser);
     let btns=!past?myRespButtons(h):'';
     if(isAdmin()) btns+='<button onclick="deleteHunt(\''+h.id+'\')" style="padding:10px 14px;background:var(--red2);border:1px solid var(--red);border-radius:10px;color:#f4d0d0;font-size:13px;cursor:pointer;">🗑</button>';
-    return '<div class="card" style="'+(past?'opacity:.5':'')+'"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><div style="font-size:16px;font-weight:700;">'+fmtDate(h.date)+'</div></div>'+
+    return '<div class="card" style="'+(past?'opacity:.92':'')+'"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><div style="font-size:16px;font-weight:700;">'+fmtDate(h.date)+'</div></div>'+
       '<div style="font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">'+h.type+'</div>'+
       (h.note?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">📌 '+h.note+'</div>':'')+
       rsvpHtml(h,false)+
       huntComersHtml(h)+
       ((h.declines||[]).filter(Boolean).length?'<div style="font-size:12px;color:#ff8c8c;margin:-4px 0 10px;">Kan ikke: '+(h.declines||[]).filter(Boolean).map(esc).join(', ')+'</div>':'')+
       (!past&&pjOnDate(h.date).length?'<div style="font-size:13px;color:#ffb0b0;margin-bottom:8px;">⚠️ Du har også: '+pjOnDate(h.date).map(p=>esc(p.name)).join(', ')+' 🔒</div>':'')+
+      resultHtml(h)+
       '<div style="display:flex;gap:8px;">'+btns+'</div></div>';
   }).join('');
 }
@@ -3004,7 +3125,9 @@ function renderStats(){
   let fk=kills;
   if(statYear===0) fk=kills.filter(k=>k.date&&k.date.startsWith(String(thisYear)));
   else if(statYear===1) fk=kills.filter(k=>k.date&&k.date.startsWith(String(thisYear-1)));
-  if(!fk.length){el.innerHTML='<div class="empty">Ingen data for denne periode.</div>';return;}
+  const inP=d=>!!d&&(statYear===-1||(statYear===0&&d.startsWith(String(thisYear)))||(statYear===1&&d.startsWith(String(thisYear-1))));
+  const hstats=huntStatsHtml(inP);
+  if(!fk.length){el.innerHTML=hstats+'<div class="empty">Ingen enkeltregistreringer i skydeloggen for denne periode.</div>';return;}
   const byAnimal={}, byHunter={}, byStand={};
   fk.forEach(k=>{
     byAnimal[k.animal]=(byAnimal[k.animal]||0)+1;
@@ -3022,7 +3145,7 @@ function renderStats(){
   el.innerHTML='<div class="card"><div style="font-size:28px;font-weight:700;color:var(--gold);">'+fk.length+'</div><div style="font-size:13px;color:var(--text3);">nedlagte dyr</div></div>'+
     '<div class="card"><div class="card-title">Efter dyreart</div>'+bar(byAnimal,'var(--green)')+'</div>'+
     '<div class="card"><div class="card-title">Efter jæger</div>'+bar(byHunter,'var(--gold)')+'</div>'+
-    '<div class="card"><div class="card-title">Efter torn</div>'+bar(byStand,'var(--pink)')+'</div>';
+    '<div class="card"><div class="card-title">Efter torn</div>'+bar(byStand,'var(--pink)')+'</div>'+hstats;
 }
 
 // ── ADMIN ────────────────────────────────────────────────────────

@@ -29,7 +29,7 @@ De to grupper må **aldrig** kunne se hinandens data: separate repos, separate a
 
 ## Databasestier
 
-`members`, `stands` (tårne), `nextStandId`, `kills` (nedlagt vildt), `hunts` (jagter, `createdBy`, `signups` (kommer), `declines` (kan ikke), `extra/<navn>` = {guests:[{name}], dogs:[{name,type}], note}), `chat`, `vagtplan`, `kvoter`, `extraAreas` (tegnede arealer), `positions` (delt GPS mens man er tjekket ind), `activity`, `adminMsg`, `feeders` (foderpladser/vildtkameraer: interval i dage, `last`, `log`), `alerts` (nødalarmer, `active`). Tårne har `dir` (skudretning i grader, 0 = nord).
+`members`, `stands` (tårne), `nextStandId`, `kills` (nedlagt vildt), `hunts` (jagter, `createdBy`, `signups` (kommer), `declines` (kan ikke), `extra/<navn>` = {guests:[{name}], dogs:[{name,type}], note}, `result/<nøgle>` = {name, shots, game:[{animal,count}], note, by} – nøgle = navn med . # $ [ ] / erstattet af _), `chat`, `vagtplan`, `kvoter`, `extraAreas` (tegnede arealer), `positions` (delt GPS mens man er tjekket ind), `activity`, `adminMsg`, `feeders` (foderpladser/vildtkameraer: interval i dage, `last`, `log`), `alerts` (nødalarmer, `active`). Tårne har `dir` (skudretning i grader, 0 = nord).
 **Ikke i databasen:** "Mine andre jagter" (private jagter) ligger kun i telefonens localStorage under `pj_<brugernavn>` – uden app-præfiks, fordi begge apps ligger på samme domæne; så ser brugeren sine private jagter i begge apps. Må aldrig sendes til Firebase.
 Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 
@@ -69,6 +69,7 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 - 25-10-2026: Kortlag-panel kan rulle på telefon; skudretning kan sættes direkte når man trykker på tårnet (admin). Test: `test_v3.py`.
 - 25-10-2026: Gæster & hunde på fællesjagter (pr. jæger, med note), samlet antal jægere/gæster/hunde på kort og forside, frameld fjerner også gæster/hunde. Test: `test_v4.py`.
 - 25-10-2026: Tårne låst (kun admin flytter/opretter). Svar på fællesjagt: Kommer / Kan ikke / Ikke svaret med samlet graf og navne i tre kolonner; næste jagt ligger øverst på forsiden. Test: `test_v5.py`.
+- 25-10-2026: Resultat fra fællesjagt (hvem skød hvad, antal skud; deltagere skriver for sig selv og egne gæster, admin for alle) + statistik for fællesjagter (skud pr. dyr, pr. jæger, jagt for jagt). Jagttid-kortet halveret, større tårnmærker. Test: `test_v6.py`.
 
 ## Idéer / ikke lavet endnu
 
