@@ -43,9 +43,9 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 7. **Faste arealer i koden** (Nord-/Sydstykket i pixel-koordinater) passede ikke. Arealer tegnes nu kun i appen og ligger i `extraAreas`. Læg ikke koordinater i koden.
 8. **Ikke vise placeringen før `cancelPlace()`** – `placingStand` er `null` bagefter.
 9. Stille fejl ved gemning: tjek altid `r.ok` på fetch. En afvisning fra databasen (401/403) = Firebase **Rules** forkerte/udløbet ("test mode" udløber efter 30 dage).
+10. Testede ikke på rigtig skærm med iPhone-kanter → knapper kunne ikke trykkes. Kør `test_layout.py` efter enhver layoutændring.
 11. **Tårn-felter forsvandt**: flere steder skrev tårne som `{id,name,lat,lng,booking}` og smed andre felter væk (fx `dir`). Tilføj nye felter alle steder der skriver `stands/`.
 12. Tests der læser tekst skal bruge `textContent`, ikke `innerText` – overskrifter er versaler via CSS.
-10. Testede ikke på rigtig skærm med iPhone-kanter → knapper kunne ikke trykkes. Kør `test_layout.py` efter enhver layoutændring.
 
 ## Sådan arbejder vi
 
