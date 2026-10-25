@@ -46,6 +46,8 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 10. Testede ikke på rigtig skærm med iPhone-kanter → knapper kunne ikke trykkes. Kør `test_layout.py` efter enhver layoutændring.
 11. **Tårn-felter forsvandt**: flere steder skrev tårne som `{id,name,lat,lng,booking}` og smed andre felter væk (fx `dir`). Tilføj nye felter alle steder der skriver `stands/`.
 12. Tests der læser tekst skal bruge `textContent`, ikke `innerText` – overskrifter er versaler via CSS.
+13. **Kortlag-panelet kunne ikke rulle** på telefonen (sprang tilbage): `overflow:hidden` stod efter `overflow-y:auto` i samme regel. Paneler over kortet: `overflow-y:auto; overscroll-behavior:contain` og `L.DomEvent.disableScrollPropagation`. Test med rigtige touch-bevægelser (`test_v3.py`).
+14. Vinddata kan mangle → tjek `typeof WIND.from==='number'` før brug, ellers går hele forsiden i stykker.
 
 ## Sådan arbejder vi
 
@@ -62,6 +64,7 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 - 25-10-2026: Denne fil + testpakke lagt i begge repos.
 - 25-10-2026: "Mine andre jagter" (🔒 Mine under Jagter): private jagter kun på telefonen, advarsel ved overlap med fællesjagter/egne jagter, farver i kalender, spørger ved tilmelding på optaget dag. Test: `test_private.py`.
 - 25-10-2026: Vind ved tårne (skudretning + grøn/gul/rød + sektorer på kort), jagttider (forside + egen side + advarsel ved registrering), offline-kort, nødknap (SOS til alle med position, banner, stop), foderpladser & vildtkameraer (kort, påmindelse, log). Test: `test_v2.py`.
+- 25-10-2026: Kortlag-panel kan rulle på telefon; skudretning kan sættes direkte når man trykker på tårnet (admin). Test: `test_v3.py`.
 
 ## Idéer / ikke lavet endnu
 

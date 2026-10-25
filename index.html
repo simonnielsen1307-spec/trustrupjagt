@@ -107,7 +107,8 @@ nav.hidden{transform:translateY(100%);}
 .att{background:rgba(0,0,0,.6)!important;color:white!important;border:none!important;font-family:var(--fp),sans-serif!important;font-size:12px!important;padding:3px 8px!important;border-radius:8px!important;}
 
 /* KORTLAG */
-#lp{position:absolute;top:10px;left:10px;max-height:calc(100% - 90px);overflow-y:auto;z-index:1000;background:rgba(17,19,17,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;min-width:160px;overflow:hidden;}
+#lp{position:absolute;top:10px;left:10px;max-height:calc(100% - 96px);overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;z-index:1000;background:rgba(17,19,17,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;min-width:160px;max-width:calc(100% - 20px);}
+#lp-h{position:sticky;top:0;background:rgba(17,19,17,.98);z-index:1;}
 #lp-h{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;font-size:13px;color:var(--gold);font-family:var(--fp),sans-serif;}
 #lp-b{padding:6px 12px 10px;}
 .lr{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:var(--text2);}
@@ -435,6 +436,9 @@ nav::-webkit-scrollbar{display:none;}
 <div class="modal">
   <h3 id="ci-title">📍 Check ind</h3>
   <div id="ci-status" style="text-align:center;padding:16px 0;"></div>
+  <div class="field" id="ci-dir-wrap" style="display:none;"><label>Skudretning (hvor du kigger hen)</label>
+    <select id="ci-dir" onchange="setStandDir(checkingStand,this.value)"><option value="">Ikke sat</option><option value="0">Nord</option><option value="45">Nordøst</option><option value="90">Øst</option><option value="135">Sydøst</option><option value="180">Syd</option><option value="225">Sydvest</option><option value="270">Vest</option><option value="315">Nordvest</option></select>
+  </div>
   <div class="field"><label>Klokkeslæt</label><input type="time" id="ci-time"></div>
   <div class="modal-btns">
     <button class="btn btn-g" id="ci-btn" onclick="doCheckin()">✓ Check ind</button>
@@ -933,6 +937,7 @@ async function fetchWind(force){
     const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+HOME[0]+'&longitude='+HOME[1]+'&current=wind_direction_10m,wind_speed_10m&hourly=wind_direction_10m,wind_speed_10m&wind_speed_unit=ms&timezone=Europe%2FCopenhagen&forecast_days=2',{signal:ctrl.signal});
     if(!r.ok) return;
     const d=await r.json();
+    if(!d.current||typeof d.current.wind_direction_10m!=='number') return;
     WIND={from:d.current.wind_direction_10m,speed:d.current.wind_speed_10m,ts:Date.now(),
       hours:(d.hourly.time||[]).map((t,i)=>({t,from:d.hourly.wind_direction_10m[i],speed:d.hourly.wind_speed_10m[i]}))};
     try{ localStorage.setItem('tj_wind',JSON.stringify(WIND)); }catch(e){}
@@ -947,7 +952,7 @@ function windRating(dir,from,speed){
   if(diff<=100) return {c:'y',t:'Sidevind – kan gå'};
   return {c:'g',t:'God vind – vinden kommer fra skudfeltet'};
 }
-function standWind(s){ return WIND?windRating(s.dir,WIND.from,WIND.speed):null; }
+function standWind(s){ return WIND&&typeof WIND.from==='number'?windRating(s.dir,WIND.from,WIND.speed):null; }
 function windAt(hour){
   if(!WIND||!WIND.hours) return null;
   const now=new Date(), ds=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
@@ -956,13 +961,13 @@ function windAt(hour){
 function windDot(s){ const w=standWind(s); return w?'<span class="wd w-'+w.c+'"></span>':''; }
 function windSummaryHtml(){
   const placed=stands.filter(s=>s.lat&&s.dir!=null&&s.dir!=='');
-  if(!WIND) return '';
+  if(!WIND||typeof WIND.from!=='number') return '';
   let h='<div class="card"><div class="card-title">💨 Vind ved tårnene</div>';
   h+='<div style="font-size:14px;margin-bottom:8px;">Nu: fra <b>'+dirName(WIND.from)+'</b> · '+(Math.round(WIND.speed*10)/10).toString().replace('.',',')+' m/s <span style="display:inline-block;transform:rotate('+(WIND.from+180)+'deg);">↑</span></div>';
   if(!placed.length){ h+='<div style="font-size:13px;color:var(--text3);">Sæt skudretning på tårnene (✏️ under Tårne), så viser appen om vinden er god.</div></div>'; return h; }
   const eve=windAt(17), hr=new Date().getHours();
   placed.forEach(s=>{
-    const w=standWind(s), we=eve&&hr<17?windRating(s.dir,eve.from,eve.speed):null;
+    const w=standWind(s)||{c:'n',t:'Ingen vinddata'}, we=eve&&hr<17?windRating(s.dir,eve.from,eve.speed):null;
     h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border2);">'+
        '<span class="wd w-'+w.c+'" style="margin:0"></span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;">'+esc(s.name)+' <span style="color:var(--text3);font-weight:400;font-size:12px;">skyder mod '+dirName(s.dir)+'</span></div>'+
        '<div style="font-size:12px;color:var(--text3);">'+w.t+'</div></div>'+
@@ -1300,6 +1305,15 @@ function feederReminders(){
   });
 }
 
+async function setStandDir(s,v){
+  if(!s) return;
+  s.dir=v===''?null:parseInt(v);
+  DB.stands[s.id]={...s,marker:undefined};
+  await saveOneSt(s);
+  updMarker(s); redrawSectors();
+  if(document.getElementById('v-Tårne').classList.contains('active')) renderTårne();
+  toast(s.dir==null?'Skudretning fjernet':'✅ '+s.name+' skyder mod '+dirName(s.dir)+(standWind(s)?' – '+standWind(s).t.split(' – ')[0].toLowerCase():''));
+}
 // ── UTILS ────────────────────────────────────────────────────────
 function toast(msg, dur=2500){
   document.querySelectorAll('.toast-el').forEach(t=>t.remove());
@@ -1669,6 +1683,7 @@ function initMapLayers(){
   });
 
   document.getElementById('lp').querySelector('#lp-b').style.display='none';
+  ['lp','area-bar','mb','map-sos','findme-btn'].forEach(id=>{ const el=document.getElementById(id); if(el){ L.DomEvent.disableScrollPropagation(el); L.DomEvent.disableClickPropagation(el); } });
   document.getElementById('lp-t').textContent='+';
 }
 
@@ -2332,6 +2347,8 @@ function openCheckin(id){
   const s=stands.find(x=>x.id===id);
   if(!s) return;
   checkingStand=s;
+  document.getElementById('ci-dir-wrap').style.display=isAdmin()?'':'none';
+  document.getElementById('ci-dir').value=(s.dir==null?'':String(s.dir));
   const now=new Date();
   document.getElementById('ci-time').value=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
   document.getElementById('ci-title').textContent='📍 '+s.name;
