@@ -28,7 +28,7 @@ De to grupper må **aldrig** kunne se hinandens data: separate repos, separate a
 
 ## Databasestier
 
-`members`, `stands` (tårne), `nextStandId`, `kills` (nedlagt vildt), `hunts` (jagter, `createdBy`), `chat`, `vagtplan`, `kvoter`, `extraAreas` (tegnede arealer), `positions` (delt GPS mens man er tjekket ind), `activity`, `adminMsg`, `feeders` (foderpladser/vildtkameraer: interval i dage, `last`, `log`), `alerts` (nødalarmer, `active`). Tårne har `dir` (skudretning i grader, 0 = nord).
+`members`, `stands` (tårne), `nextStandId`, `kills` (nedlagt vildt), `hunts` (jagter, `createdBy`, `signups`, `extra/<navn>` = {guests:[{name}], dogs:[{name,type}], note}), `chat`, `vagtplan`, `kvoter`, `extraAreas` (tegnede arealer), `positions` (delt GPS mens man er tjekket ind), `activity`, `adminMsg`, `feeders` (foderpladser/vildtkameraer: interval i dage, `last`, `log`), `alerts` (nødalarmer, `active`). Tårne har `dir` (skudretning i grader, 0 = nord).
 **Ikke i databasen:** "Mine andre jagter" (private jagter) ligger kun i telefonens localStorage under `pj_<brugernavn>` – uden app-præfiks, fordi begge apps ligger på samme domæne; så ser brugeren sine private jagter i begge apps. Må aldrig sendes til Firebase.
 Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 
@@ -48,6 +48,7 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 12. Tests der læser tekst skal bruge `textContent`, ikke `innerText` – overskrifter er versaler via CSS.
 13. **Kortlag-panelet kunne ikke rulle** på telefonen (sprang tilbage): `overflow:hidden` stod efter `overflow-y:auto` i samme regel. Paneler over kortet: `overflow-y:auto; overscroll-behavior:contain` og `L.DomEvent.disableScrollPropagation`. Test med rigtige touch-bevægelser (`test_v3.py`).
 14. Vinddata kan mangle → tjek `typeof WIND.from==='number'` før brug, ellers går hele forsiden i stykker.
+15. **Tilmeldinger forsvandt** når to tilmeldte sig samtidig: hele `signups`-listen blev skrevet fra telefonens gamle kopi. Brug `updateSignups` (henter nyeste liste først). Gem data pr. bruger i egne stier (`extra/<navn>`) i stedet for at overskrive fælles lister.
 
 ## Sådan arbejder vi
 
@@ -65,6 +66,7 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 - 25-10-2026: "Mine andre jagter" (🔒 Mine under Jagter): private jagter kun på telefonen, advarsel ved overlap med fællesjagter/egne jagter, farver i kalender, spørger ved tilmelding på optaget dag. Test: `test_private.py`.
 - 25-10-2026: Vind ved tårne (skudretning + grøn/gul/rød + sektorer på kort), jagttider (forside + egen side + advarsel ved registrering), offline-kort, nødknap (SOS til alle med position, banner, stop), foderpladser & vildtkameraer (kort, påmindelse, log). Test: `test_v2.py`.
 - 25-10-2026: Kortlag-panel kan rulle på telefon; skudretning kan sættes direkte når man trykker på tårnet (admin). Test: `test_v3.py`.
+- 25-10-2026: Gæster & hunde på fællesjagter (pr. jæger, med note), samlet antal jægere/gæster/hunde på kort og forside, frameld fjerner også gæster/hunde. Test: `test_v4.py`.
 
 ## Idéer / ikke lavet endnu
 

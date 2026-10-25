@@ -174,6 +174,17 @@ nav::-webkit-scrollbar{display:none;}
 @keyframes sosPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,59,.7)}50%{box-shadow:0 0 0 12px rgba(255,59,59,0)}}
 .off-prog{height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-top:6px;}
 .off-prog span{display:block;height:100%;width:0;background:var(--gold);transition:width .2s;}
+
+.hc-list{margin:0 0 10px;border-top:1px solid var(--border2);}
+.hc-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2);align-items:flex-start;}
+.hc-row b{font-size:14px;}
+.hc-sub{font-size:12px;color:var(--text3);margin-top:2px;line-height:1.4;}
+.gd-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-size:14px;}
+.gd-item span{flex:1;min-width:0;}
+.gd-item button{min-width:40px;min-height:40px;border-radius:8px;border:1px solid var(--red);background:var(--red2);color:#f4d0d0;cursor:pointer;}
+.gd-add{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+.gd-add input,.gd-add select{flex:1;min-width:120px;padding:11px 12px;background:rgba(17,19,17,.5);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:var(--fl),sans-serif;}
+.gd-add button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--green);background:var(--green2);color:var(--text);font-weight:700;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -539,6 +550,25 @@ nav::-webkit-scrollbar{display:none;}
 </div></div>
 
 <div id="sos-banner" role="alert"></div>
+
+<!-- Gæster & hunde til fællesjagt -->
+<div class="overlay" id="gd-modal">
+<div class="modal">
+  <h3 id="gd-title">👥 Gæster &amp; hunde</h3>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:700;">Gæster du tager med</div>
+  <div id="gd-guests"></div>
+  <div class="gd-add"><input type="text" id="gd-gname" placeholder="Gæstens navn" maxlength="40"><button onclick="gdAddGuest()">＋ Tilføj</button></div>
+  <div style="font-size:13px;color:var(--text2);margin:14px 0 6px;font-weight:700;">Hunde du tager med</div>
+  <div id="gd-dogs"></div>
+  <div class="gd-add"><input type="text" id="gd-dname" placeholder="Hundens navn" maxlength="30">
+    <select id="gd-dtype"><option>Apportør</option><option>Drivende hund</option><option>Stående hund</option><option>Schweisshund</option><option>Gravhund</option><option>Andet</option></select>
+    <button onclick="gdAddDog()">＋ Tilføj</button></div>
+  <div class="field" style="margin-top:12px;"><label>Besked til de andre (valgfri)</label><input type="text" id="gd-note" placeholder="F.eks. Kommer først kl. 9" maxlength="80"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="saveGuestsDogs()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('gd-modal')">Annuller</button>
+  </div>
+</div></div>
 
 <!-- Torn navn modal -->
 <div class="overlay" id="Tårne-edit-modal">
@@ -1314,6 +1344,68 @@ async function setStandDir(s,v){
   if(document.getElementById('v-Tårne').classList.contains('active')) renderTårne();
   toast(s.dir==null?'Skudretning fjernet':'✅ '+s.name+' skyder mod '+dirName(s.dir)+(standWind(s)?' – '+standWind(s).t.split(' – ')[0].toLowerCase():''));
 }
+// ── GÆSTER & HUNDE PÅ FÆLLESJAGT ───────────────────────────
+// Gemmes pr. jæger under hunts/<id>/extra/<navn>, så ingen overskriver hinanden.
+let gdHunt=null, gdDraft=null;
+// Hent altid nyeste tilmeldingsliste før vi skriver, så to der tilmelder sig samtidig ikke sletter hinanden
+async function updateSignups(h,add){
+  let cur=h.signups||[];
+  try{ const r=await fetch(FB+'/hunts/'+h.id+'/signups.json',{cache:'no-store'}); if(r.ok){ const d=await r.json(); cur=Array.isArray(d)?d:(d?Object.values(d):[]); } }catch(e){}
+  cur=cur.filter(Boolean).filter(u=>u!==currentUser);
+  if(add) cur.push(currentUser);
+  h.signups=cur;
+  return fbWrite('hunts/'+h.id+'/signups',cur);
+}
+function huntExtra(h,u){ const e=(h&&h.extra&&h.extra[u])||{}; return {guests:(e.guests||[]).filter(Boolean),dogs:(e.dogs||[]).filter(Boolean),note:e.note||''}; }
+function huntTotals(h){
+  const su=(h.signups||[]).filter(Boolean); let g=0,d=0;
+  su.forEach(u=>{ const e=huntExtra(h,u); g+=e.guests.length; d+=e.dogs.length; });
+  return {hunters:su.length,guests:g,dogs:d};
+}
+function huntTotalsTxt(h){ const t=huntTotals(h);
+  return t.hunters+' jæger'+(t.hunters===1?'':'e')+(t.guests?' · '+t.guests+' gæst'+(t.guests===1?'':'er'):'')+(t.dogs?' · '+t.dogs+' hund'+(t.dogs===1?'':'e'):''); }
+function huntComersHtml(h){
+  const su=(h.signups||[]).filter(Boolean);
+  if(!su.length) return '';
+  return '<div class="hc-list">'+su.map(u=>{ const e=huntExtra(h,u);
+    let sub=[];
+    if(e.guests.length) sub.push('👤 Gæst'+(e.guests.length>1?'er':'')+': '+e.guests.map(x=>esc(x.name)).join(', '));
+    if(e.dogs.length) sub.push('🐕 '+e.dogs.map(x=>esc(x.name)+(x.type?' ('+esc(x.type).toLowerCase()+')':'')).join(', '));
+    if(e.note) sub.push('💬 '+esc(e.note));
+    return '<div class="hc-row"><div style="flex:1;min-width:0;"><b>'+esc(u)+(u===currentUser?' (dig)':'')+'</b>'+(sub.length?'<div class="hc-sub">'+sub.join('<br>')+'</div>':'')+'</div></div>';
+  }).join('')+'</div>';
+}
+function openGuestsDogs(hid){
+  const h=hunts.find(x=>x.id===hid); if(!h) return;
+  gdHunt=hid; gdDraft=JSON.parse(JSON.stringify(huntExtra(h,currentUser)));
+  document.getElementById('gd-title').textContent='👥 Gæster & hunde – '+fmtDMY(h.date);
+  document.getElementById('gd-note').value=gdDraft.note||'';
+  document.getElementById('gd-gname').value=''; document.getElementById('gd-dname').value='';
+  gdRender(); openModal('gd-modal');
+}
+function gdRender(){
+  document.getElementById('gd-guests').innerHTML=gdDraft.guests.length?gdDraft.guests.map((g,i)=>'<div class="gd-item"><span>👤 '+esc(g.name)+'</span><button aria-label="Fjern gæst" onclick="gdDraft.guests.splice('+i+',1);gdRender()">✕</button></div>').join(''):'<div style="font-size:12px;color:var(--text3);margin-bottom:6px;">Ingen gæster.</div>';
+  document.getElementById('gd-dogs').innerHTML=gdDraft.dogs.length?gdDraft.dogs.map((d,i)=>'<div class="gd-item"><span>🐕 '+esc(d.name)+' <span style="color:var(--text3);font-size:12px;">'+esc(d.type||'')+'</span></span><button aria-label="Fjern hund" onclick="gdDraft.dogs.splice('+i+',1);gdRender()">✕</button></div>').join(''):'<div style="font-size:12px;color:var(--text3);margin-bottom:6px;">Ingen hunde.</div>';
+}
+function gdAddGuest(){ const el=document.getElementById('gd-gname'), n=el.value.trim(); if(!n){ toast('Skriv gæstens navn'); return; } gdDraft.guests.push({name:n}); el.value=''; gdRender(); }
+function gdAddDog(){ const el=document.getElementById('gd-dname'), n=el.value.trim(); if(!n){ toast('Skriv hundens navn'); return; } gdDraft.dogs.push({name:n,type:document.getElementById('gd-dtype').value}); el.value=''; gdRender(); }
+async function saveGuestsDogs(){
+  const h=hunts.find(x=>x.id===gdHunt); if(!h) return;
+  // tag også et navn med der er skrevet men ikke tilføjet
+  const gn=document.getElementById('gd-gname').value.trim(); if(gn) gdDraft.guests.push({name:gn});
+  const dn=document.getElementById('gd-dname').value.trim(); if(dn) gdDraft.dogs.push({name:dn,type:document.getElementById('gd-dtype').value});
+  gdDraft.note=document.getElementById('gd-note').value.trim();
+  const val=(gdDraft.guests.length||gdDraft.dogs.length||gdDraft.note)?gdDraft:null;
+  if(!h.extra) h.extra={};
+  if(val) h.extra[currentUser]=val; else delete h.extra[currentUser];
+  if(!(h.signups||[]).includes(currentUser)) await updateSignups(h,true);
+  DB.hunts[h.id]=h;
+  const ok=await fbWrite('hunts/'+h.id+'/extra/'+currentUser,val);
+  closeModal('gd-modal'); renderHunts();
+  if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard();
+  if(ok!==false){ toast('✅ Gemt – '+huntTotalsTxt(h)); if(val) logActivity(currentUser+' tager '+(gdDraft.guests.length?gdDraft.guests.length+' gæst(er) ':'')+(gdDraft.dogs.length?gdDraft.dogs.length+' hund(e) ':'')+'med '+fmtDMY(h.date)); }
+}
+
 // ── UTILS ────────────────────────────────────────────────────────
 function toast(msg, dur=2500){
   document.querySelectorAll('.toast-el').forEach(t=>t.remove());
@@ -2152,7 +2244,7 @@ function renderDashboard(){
     h+='<div style="font-size:17px;color:var(--text);">'+fmtDate(nextH.date)+'</div>';
     h+='<div style="font-size:13px;color:var(--green);margin-top:3px;text-transform:uppercase;">'+nextH.type+'</div>';
     if(nextH.note) h+='<div style="font-size:12px;color:var(--text3);margin-top:4px;">📌 '+nextH.note+'</div>';
-    h+='<div style="font-size:12px;color:var(--text3);margin-top:4px;">👥 '+((nextH.signups||[]).length)+' tilmeldte</div>';
+    h+='<div style="font-size:12px;color:var(--text3);margin-top:4px;">👥 '+huntTotalsTxt(nextH)+'</div>';
     if(pjOnDate(nextH.date).length) h+='<div style="font-size:13px;color:#ffb0b0;margin-top:6px;">⚠️ Du har også: '+pjOnDate(nextH.date).map(p=>esc(p.name)).join(', ')+' 🔒</div>';
   } else {
     h+='<div style="font-size:13px;color:var(--text3);">Ingen kommende jagter</div>';
@@ -2543,12 +2635,14 @@ function renderHunts(){
   el.innerHTML=hunts.map(h=>{
     const past=h.date<today;
     const signed=(h.signups||[]).includes(currentUser);
-    let btns=!past?'<button onclick="toggleSignup(\''+h.id+'\')" style="flex:1;padding:10px;background:'+(signed?'var(--red2)':'var(--green2)')+';border:1px solid '+(signed?'var(--red)':'var(--green)')+';border-radius:10px;color:var(--text);font-size:13px;cursor:pointer;">'+(signed?'✗ Frameld':'✓ Tilmeld')+'</button>':'';
+    let btns=!past&&signed?'<button onclick="openGuestsDogs(\''+h.id+'\')" style="flex:1;padding:10px;min-height:44px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer;">👥 Gæster &amp; hunde</button>':'';
+    btns+=!past?'<button onclick="toggleSignup(\''+h.id+'\')" style="flex:1;padding:10px;background:'+(signed?'var(--red2)':'var(--green2)')+';border:1px solid '+(signed?'var(--red)':'var(--green)')+';border-radius:10px;color:var(--text);font-size:13px;cursor:pointer;">'+(signed?'✗ Frameld':'✓ Tilmeld')+'</button>':'';
     if(isAdmin()) btns+='<button onclick="deleteHunt(\''+h.id+'\')" style="padding:10px 14px;background:var(--red2);border:1px solid var(--red);border-radius:10px;color:#f4d0d0;font-size:13px;cursor:pointer;">🗑</button>';
     return '<div class="card" style="'+(past?'opacity:.5':'')+'"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><div style="font-size:16px;font-weight:700;">'+fmtDate(h.date)+'</div></div>'+
       '<div style="font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">'+h.type+'</div>'+
       (h.note?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">📌 '+h.note+'</div>':'')+
-      '<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">👥 '+((h.signups||[]).length)+' tilmeldte'+(signed?' (inkl. dig)':'')+'</div>'+
+      '<div style="font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:600;">👥 '+huntTotalsTxt(h)+(signed?' · inkl. dig':'')+'</div>'+
+      huntComersHtml(h)+
       (!past&&pjOnDate(h.date).length?'<div style="font-size:13px;color:#ffb0b0;margin-bottom:8px;">⚠️ Du har også: '+pjOnDate(h.date).map(p=>esc(p.name)).join(', ')+' 🔒</div>':'')+
       '<div style="display:flex;gap:8px;">'+btns+'</div></div>';
   }).join('');
@@ -2606,12 +2700,10 @@ async function toggleSignup(hid,force){
     const c=pjOnDate(h.date);
     if(c.length){ showConfirm('Du har allerede '+c.map(p=>p.name).join(', ')+' den dag. Tilmeld alligevel?',()=>toggleSignup(hid,true)); return; }
   }
-  if(!h.signups) h.signups=[];
-  const idx=h.signups.indexOf(currentUser);
-  if(idx===-1) h.signups.push(currentUser);
-  else h.signups.splice(idx,1);
+  const idx=(h.signups||[]).indexOf(currentUser);
+  await updateSignups(h,idx===-1);
+  if(idx!==-1&&h.extra&&h.extra[currentUser]){ delete h.extra[currentUser]; await fbWrite('hunts/'+hid+'/extra/'+currentUser,null); }
   DB.hunts[hid]=h;
-  await fbWrite('hunts/'+hid+'/signups',h.signups);
   renderHunts();
   toast(idx===-1?'✅ Tilmeldt!':'✅ Frameldt!');
 }

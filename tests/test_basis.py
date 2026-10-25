@@ -37,7 +37,8 @@ def fbarr(v):
 
 async def fb(route, req):
     m = re.search(r'firebasedatabase\.app/(.*?)\.json', req.url)
-    path = m.group(1)
+    from urllib.parse import unquote
+    path = unquote(m.group(1))
     if not path.startswith('trustrup'):
         LOG.append('FORKERT STI: ' + path)
     path = path[len('trustrup'):]
