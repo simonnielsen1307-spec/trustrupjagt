@@ -268,6 +268,7 @@ nav::-webkit-scrollbar{display:none;}
   </div>
   <div style="padding:8px 14px;border-bottom:1px solid var(--border2);display:flex;gap:8px;flex-shrink:0;">
     <button id="jagt-liste-btn" onclick="setJagtView('liste')" style="flex:1;padding:9px;background:var(--gold);color:var(--bg);border:none;border-radius:10px;font-family:var(--fl),sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📋 Liste</button>
+    <button id="jagt-mine-btn" onclick="setJagtView('mine')" style="flex:1;padding:9px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:10px;font-family:var(--fl),sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🔒 Mine</button>
     <button id="jagt-kal-btn" onclick="setJagtView('kalender')" style="flex:1;padding:9px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);border-radius:10px;font-family:var(--fl),sans-serif;font-size:13px;cursor:pointer;">🗓 Kalender</button>
   </div>
   <div class="view-inner" id="hunt-list"></div>
@@ -432,6 +433,29 @@ nav::-webkit-scrollbar{display:none;}
     <button class="btn btn-g" onclick="saveHunt()">✓ Gem</button>
     <button class="btn btn-q" onclick="closeModal('hunt-modal')">Annuller</button>
   </div>
+</div></div>
+
+<!-- Private jagter -->
+<div class="overlay" id="pj-modal">
+<div class="modal">
+  <h3 id="pj-title">🔒 Min anden jagt</h3>
+  <div style="font-size:12px;color:var(--text3);margin:-6px 0 14px;">Gemmes kun på din telefon. Ingen andre kan se den.</div>
+  <div class="field"><label>Hvor / hvad</label><input type="text" id="pj-name" placeholder="F.eks. Svogers jagt i Mols"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="field"><label>Fra dato</label><input type="date" id="pj-date" onchange="pjCheckWarn()"></div>
+    <div class="field"><label>Til dato (valgfri)</label><input type="date" id="pj-end" onchange="pjCheckWarn()"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="field"><label>Fra kl. (valgfri)</label><input type="time" id="pj-from"></div>
+    <div class="field"><label>Til kl. (valgfri)</label><input type="time" id="pj-to"></div>
+  </div>
+  <div class="field"><label>Note</label><input type="text" id="pj-note" placeholder="Mødested, hvem, osv."></div>
+  <div id="pj-warn" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:12px;background:rgba(255,92,92,.12);border:1px solid var(--pink);color:#ffb0b0;font-size:13px;"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="savePrivate()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('pj-modal')">Annuller</button>
+  </div>
+  <button id="pj-del" onclick="deletePrivate()" style="display:none;width:100%;margin-top:10px;padding:12px;background:var(--red2);border:1px solid var(--red);border-radius:12px;color:#f4d0d0;font-size:14px;cursor:pointer;">🗑 Slet</button>
 </div></div>
 
 <!-- Torn navn modal -->
@@ -716,6 +740,102 @@ function checkNews(kind,data){
   });
 }
 function fmtDMY(d){ if(!d) return ''; const p=d.split('-'); return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:d; }
+
+// ── MINE ANDRE JAGTER (kun på denne telefon) ───────────────────
+// Ligger i localStorage pr. bruger og deles bevidst IKKE med databasen.
+let editingPrivate=null;
+function pjKey(){ return 'pj_'+(currentUser||''); }
+function getPrivate(){ try{ const v=JSON.parse(localStorage.getItem(pjKey())||'[]'); return Array.isArray(v)?v.filter(x=>x&&x.date):[]; }catch(e){ return []; } }
+function setPrivate(list){ try{ localStorage.setItem(pjKey(),JSON.stringify(list)); return true; }catch(e){ toast('⚠️ Kunne ikke gemme på telefonen'); return false; } }
+function pjEnd(p){ return p.end&&p.end>=p.date?p.end:p.date; }
+function pjOnDate(ds){ return getPrivate().filter(p=>ds>=p.date&&ds<=pjEnd(p)); }
+function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function pjWhen(p){
+  let t=fmtDMY(p.date)+(p.end&&p.end>p.date?' – '+fmtDMY(p.end):'');
+  if(p.from) t+=' · kl. '+p.from+(p.to?'–'+p.to:'');
+  return t;
+}
+function clubOnRange(a,b){ return hunts.filter(h=>h.date>=a&&h.date<=b); }
+function openPrivate(id){
+  const p=id?getPrivate().find(x=>x.id===id):null;
+  editingPrivate=p?p.id:null;
+  document.getElementById('pj-title').textContent=p?'🔒 Ret min jagt':'🔒 Min anden jagt';
+  document.getElementById('pj-name').value=p?p.name||'':'';
+  document.getElementById('pj-date').value=p?p.date:'';
+  document.getElementById('pj-end').value=p&&p.end?p.end:'';
+  document.getElementById('pj-from').value=p&&p.from?p.from:'';
+  document.getElementById('pj-to').value=p&&p.to?p.to:'';
+  document.getElementById('pj-note').value=p?p.note||'':'';
+  document.getElementById('pj-del').style.display=p?'':'none';
+  pjCheckWarn();
+  openModal('pj-modal');
+}
+function pjCheckWarn(){
+  const a=document.getElementById('pj-date').value, e=document.getElementById('pj-end').value, w=document.getElementById('pj-warn');
+  if(!a){ w.style.display='none'; return ''; }
+  const b=e&&e>=a?e:a;
+  const club=clubOnRange(a,b).map(h=>'Fællesjagt '+fmtDMY(h.date)+' ('+esc(h.type)+')'+((h.signups||[]).includes(currentUser)?' – du er tilmeldt':''));
+  const own=getPrivate().filter(p=>p.id!==editingPrivate&&p.date<=b&&pjEnd(p)>=a).map(p=>esc(p.name||'Jagt')+' '+pjWhen(p));
+  const all=club.concat(own);
+  w.innerHTML=all.length?'⚠️ Overlapper med:<br>• '+all.join('<br>• '):''; w.style.display=all.length?'':'none';
+  return all.length;
+}
+function savePrivate(){
+  const name=document.getElementById('pj-name').value.trim();
+  const date=document.getElementById('pj-date').value;
+  let end=document.getElementById('pj-end').value;
+  const from=document.getElementById('pj-from').value, to=document.getElementById('pj-to').value;
+  const note=document.getElementById('pj-note').value.trim();
+  if(!name){ toast('Skriv hvor eller hvad'); return; }
+  if(!date){ toast('Vælg en dato'); return; }
+  if(end&&end<date){ toast('Til-dato er før fra-dato'); return; }
+  if(end===date) end='';
+  const list=getPrivate();
+  const item={id:editingPrivate||('p_'+Date.now()),name,date,end,from,to,note};
+  const i=list.findIndex(x=>x.id===item.id);
+  if(i>=0) list[i]=item; else list.push(item);
+  list.sort((a,b)=>a.date.localeCompare(b.date));
+  if(!setPrivate(list)) return;
+  const n=pjCheckWarn();
+  closeModal('pj-modal');
+  renderHunts(); if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard();
+  toast(n?'⚠️ Gemt – men den overlapper med en anden jagt':'✅ Gemt (kun synlig for dig)',3500);
+}
+function deletePrivate(){
+  if(!editingPrivate) return;
+  const id=editingPrivate;
+  closeModal('pj-modal');
+  showConfirm('Slet denne jagt fra din liste?',()=>{
+    setPrivate(getPrivate().filter(x=>x.id!==id)); editingPrivate=null;
+    renderHunts(); toast('✅ Slettet');
+  });
+}
+function renderMine(){
+  const el=document.getElementById('hunt-list');
+  const today=new Date().toISOString().split('T')[0];
+  const priv=getPrivate().filter(p=>pjEnd(p)>=today).map(p=>({kind:'p',date:p.date,p}));
+  const club=hunts.filter(h=>h.date>=today&&(h.signups||[]).includes(currentUser)).map(h=>({kind:'c',date:h.date,h}));
+  const all=priv.concat(club).sort((a,b)=>a.date.localeCompare(b.date));
+  let html='<div style="font-size:12px;color:var(--text3);margin-bottom:10px;">🔒 Dit eget overblik: fællesjagter du er tilmeldt + dine andre jagter. Dine andre jagter gemmes kun på denne telefon – ingen andre kan se dem.</div>';
+  html+='<button class="quick-btn" onclick="openPrivate()" style="width:100%;flex-direction:row;align-items:center;justify-content:center;margin-bottom:12px;font-size:17px;">＋ Tilføj anden jagt</button>';
+  if(!all.length){ el.innerHTML=html+'<div class="empty">Ingen kommende jagter.</div>'; return; }
+  html+=all.map(x=>{
+    if(x.kind==='c'){
+      const h=x.h, clash=pjOnDate(h.date);
+      return '<div class="card" style="border-left:4px solid var(--gold);"><div style="display:flex;justify-content:space-between;align-items:baseline;"><div style="font-size:16px;font-weight:700;">'+fmtDate(h.date)+'</div><div style="font-size:11px;color:var(--gold);font-weight:700;">FÆLLESJAGT</div></div>'+
+        '<div style="font-size:13px;color:var(--text2);margin-top:4px;">'+esc(h.type)+(h.note?' · '+esc(h.note):'')+'</div>'+
+        (clash.length?'<div style="margin-top:8px;font-size:13px;color:#ffb0b0;">⚠️ Overlapper med: '+clash.map(p=>esc(p.name)).join(', ')+'</div>':'')+'</div>';
+    }
+    const p=x.p, a=p.date, b=pjEnd(p);
+    const clashC=clubOnRange(a,b), clashP=getPrivate().filter(q=>q.id!==p.id&&q.date<=b&&pjEnd(q)>=a);
+    const clash=clashC.map(h=>'fællesjagt '+fmtDMY(h.date)).concat(clashP.map(q=>esc(q.name)));
+    return '<div class="card" onclick="openPrivate(\''+p.id+'\')" style="cursor:pointer;border-left:4px solid #4ea3ff;"><div style="display:flex;justify-content:space-between;align-items:baseline;"><div style="font-size:16px;font-weight:700;">'+esc(p.name)+'</div><div style="font-size:11px;color:#8cc4ff;font-weight:700;">🔒 KUN DIG</div></div>'+
+      '<div style="font-size:13px;color:var(--text2);margin-top:4px;">'+pjWhen(p)+'</div>'+
+      (p.note?'<div style="font-size:12px;color:var(--text3);margin-top:4px;">📌 '+esc(p.note)+'</div>':'')+
+      (clash.length?'<div style="margin-top:8px;font-size:13px;color:#ffb0b0;">⚠️ Overlapper med: '+clash.join(', ')+'</div>':'')+'</div>';
+  }).join('');
+  el.innerHTML=html;
+}
 
 // ── UTILS ────────────────────────────────────────────────────────
 function toast(msg, dur=2500){
@@ -1542,9 +1662,12 @@ function renderDashboard(){
     h+='<div style="font-size:13px;color:var(--green);margin-top:3px;text-transform:uppercase;">'+nextH.type+'</div>';
     if(nextH.note) h+='<div style="font-size:12px;color:var(--text3);margin-top:4px;">📌 '+nextH.note+'</div>';
     h+='<div style="font-size:12px;color:var(--text3);margin-top:4px;">👥 '+((nextH.signups||[]).length)+' tilmeldte</div>';
+    if(pjOnDate(nextH.date).length) h+='<div style="font-size:13px;color:#ffb0b0;margin-top:6px;">⚠️ Du har også: '+pjOnDate(nextH.date).map(p=>esc(p.name)).join(', ')+' 🔒</div>';
   } else {
     h+='<div style="font-size:13px;color:var(--text3);">Ingen kommende jagter</div>';
   }
+  const nextP=getPrivate().filter(p=>pjEnd(p)>=today)[0];
+  if(nextP) h+='<div onclick="jagtView=\'mine\';showView(\'jagt\');setJagtView(\'mine\')" style="cursor:pointer;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2);font-size:13px;color:#8cc4ff;">🔒 Din næste anden jagt: <b>'+esc(nextP.name)+'</b> · '+pjWhen(nextP)+'</div>';
   h+='</div>';
 
   if(kills.length){
@@ -1905,6 +2028,8 @@ function setJagtView(v){
   document.getElementById('jagt-liste-btn').style.color=v==='liste'?'var(--bg)':'var(--text3)';
   document.getElementById('jagt-kal-btn').style.background=v==='kalender'?'var(--gold)':'var(--bg2)';
   document.getElementById('jagt-kal-btn').style.color=v==='kalender'?'var(--bg)':'var(--text3)';
+  document.getElementById('jagt-mine-btn').style.background=v==='mine'?'var(--gold)':'var(--bg2)';
+  document.getElementById('jagt-mine-btn').style.color=v==='mine'?'var(--bg)':'var(--text3)';
   renderHunts();
 }
 
@@ -1912,6 +2037,7 @@ function renderHunts(){
   const el=document.getElementById('hunt-list');
   if(!el) return;
   if(jagtView==='kalender'){renderKalender();return;}
+  if(jagtView==='mine'){renderMine();return;}
   if(!hunts.length){el.innerHTML='<div class="empty">'+(firebaseLoaded?'Ingen jagter planlagt.':'🔄 Henter jagter...')+'</div>';return;}
   const today=new Date().toISOString().split('T')[0];
   el.innerHTML=hunts.map(h=>{
@@ -1923,6 +2049,7 @@ function renderHunts(){
       '<div style="font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">'+h.type+'</div>'+
       (h.note?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">📌 '+h.note+'</div>':'')+
       '<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">👥 '+((h.signups||[]).length)+' tilmeldte'+(signed?' (inkl. dig)':'')+'</div>'+
+      (!past&&pjOnDate(h.date).length?'<div style="font-size:13px;color:#ffb0b0;margin-bottom:8px;">⚠️ Du har også: '+pjOnDate(h.date).map(p=>esc(p.name)).join(', ')+' 🔒</div>':'')+
       '<div style="display:flex;gap:8px;">'+btns+'</div></div>';
   }).join('');
 }
@@ -1943,12 +2070,15 @@ function renderKalender(){
     for(let i=0;i<first;i++) h+='<div></div>';
     for(let d=1;d<=days;d++){
       const ds=yr+'-'+String(mn+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-      const hunt=hunts.find(x=>x.date===ds);
+      const club=hunts.find(x=>x.date===ds), mine=pjOnDate(ds).length>0;
+      const hunt=club||mine;
+      const bg=club&&mine?'var(--pink)':club?'var(--gold)':'#4ea3ff';
       const isToday=ds===now.toISOString().split('T')[0];
-      h+='<div style="padding:5px 2px;border-radius:6px;background:'+(hunt?'var(--gold)':isToday?'var(--bg3)':'transparent')+';color:'+(hunt?'var(--bg)':'var(--text2)')+';font-size:12px;font-weight:'+(hunt?700:400)+';cursor:'+(hunt?'pointer':'default')+';">'+d+'</div>';
+      h+='<div style="padding:5px 2px;border-radius:6px;background:'+(hunt?bg:isToday?'var(--bg3)':'transparent')+';color:'+(hunt?'var(--bg)':'var(--text2)')+';font-size:12px;font-weight:'+(hunt?700:400)+';cursor:'+(hunt?'pointer':'default')+';">'+d+'</div>';
     }
     h+='</div></div>';
   }
+  h='<div style="display:flex;gap:12px;justify-content:center;font-size:12px;color:var(--text3);margin-bottom:10px;"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--gold);"></span> Fællesjagt</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#4ea3ff;"></span> Mine 🔒</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--pink);"></span> Overlap</span></div>'+h;
   el.innerHTML=h;
 }
 
@@ -1969,9 +2099,13 @@ async function saveHunt(){
   toast('✅ Jagt tilføjet!');
 }
 
-async function toggleSignup(hid){
+async function toggleSignup(hid,force){
   const h=hunts.find(x=>x.id===hid);
   if(!h) return;
+  if(!force&&!(h.signups||[]).includes(currentUser)){
+    const c=pjOnDate(h.date);
+    if(c.length){ showConfirm('Du har allerede '+c.map(p=>p.name).join(', ')+' den dag. Tilmeld alligevel?',()=>toggleSignup(hid,true)); return; }
+  }
   if(!h.signups) h.signups=[];
   const idx=h.signups.indexOf(currentUser);
   if(idx===-1) h.signups.push(currentUser);

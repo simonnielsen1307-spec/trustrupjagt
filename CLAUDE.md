@@ -26,6 +26,7 @@ De to grupper må **aldrig** kunne se hinandens data: separate repos, separate a
 ## Databasestier
 
 `members`, `stands` (tårne), `nextStandId`, `kills` (nedlagt vildt), `hunts` (jagter, `createdBy`), `chat`, `vagtplan`, `kvoter`, `extraAreas` (tegnede arealer), `positions` (delt GPS mens man er tjekket ind), `activity`, `adminMsg`.
+**Ikke i databasen:** "Mine andre jagter" (private jagter) ligger kun i telefonens localStorage under `pj_<brugernavn>` – uden app-præfiks, fordi begge apps ligger på samme domæne; så ser brugeren sine private jagter i begge apps. Må aldrig sendes til Firebase.
 Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 
 ## Fejl vi har lavet – undgå dem igen
@@ -54,8 +55,10 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 - 24-10-2026: Trustrup oprettet som kopi af Dystrup. Egen repo + egen Firebase (`trustrup-jagt`). Rettet fejl 1–8. Nyt design C, 7 korttyper, GPS-tjek-ind med delt position, beskeder (kun når appen er åben), kvoter pr. sæson (1/4–31/3), app-ikoner.
 - 24-10-2026: Alt overført til Dystrup med eget logo (råbukhoved). Nord-/Sydstykket fjernet; arealer tegnes på ny. Alle Dystrup-koder nulstillet én gang.
 - 25-10-2026: Denne fil + testpakke lagt i begge repos.
+- 25-10-2026: "Mine andre jagter" (🔒 Mine under Jagter): private jagter kun på telefonen, advarsel ved overlap med fællesjagter/egne jagter, farver i kalender, spørger ved tilmelding på optaget dag. Test: `test_private.py`.
 
 ## Idéer / ikke lavet endnu
 
+- Synk af private jagter mellem egne enheder (krypteret med brugerens kode).
 - Beskeder når appen er helt lukket (kræver Firebase Cloud Functions + web push).
 - Strammere Firebase Rules (kræver Firebase Auth i stedet for egen login).
