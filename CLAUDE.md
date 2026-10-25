@@ -17,6 +17,9 @@ De to grupper må **aldrig** kunne se hinandens data: separate repos, separate a
 - Hostes på GitHub Pages fra `main` / root. Push til `main` = udgivet (1–2 min, telefoner kan cache op til 10 min).
 - Data: Firebase Realtime Database via REST (`fetch(FB+'/sti.json')`), ingen Firebase-SDK. `fbWrite(sti, værdi)` laver PUT/DELETE og viser fejl-toast hvis det mislykkes.
 - Polling: chat hvert 6. s, tårne hvert 20. s, jagter/vildt/positioner hvert 30. s (`startPolling`).
+- Vejr/vind: open-meteo (`fetchWind`, cache 20 min). Vindvurdering i `windRating`: duften driver mod `fra+180°`; ≤45° fra skudretningen = rød, ≤100° = gul, ellers grøn.
+- Jagttider: tabel `JT` i koden (BEK 470/2024, generelle + lokale for Djursland/Region Midtjylland: hare 1/11–15/1, agerhøne 16/9–15/10, kronhjort 1/10–30/11). Opdatér når der kommer ny jagttidsbekendtgørelse (revision 2026 er i gang).
+- Offline-kort: `saveOfflineMap` henter kortfelter for arealer+tårne (zoom 11–17) i cachen `tiles-v1`; `sw.js` svarer kort/unpkg/fonte fra cache først og må aldrig slette `tiles-*` ved opdatering.
 - Kort: Leaflet 1.9.4 fra unpkg. Korttyper i `BASES` (vej, satellit, hybrid, topo, terræn, lyst, mørkt).
 - Login: navn + kode, SHA-256 af `kode + 'dystrup-jagt-salt-2024'` (samme salt i begge apps). Medlemmer i `DB.members`; `DEFAULT_MEMBERS` bruges kun når databasen ingen medlemmer har.
 - Lokal lagring har præfiks pr. app (`dj_` / `tj_`), så begge apps kan køre på samme telefon. Cachen er bundet til database-adressen (`c.fb===FB`).
@@ -25,7 +28,7 @@ De to grupper må **aldrig** kunne se hinandens data: separate repos, separate a
 
 ## Databasestier
 
-`members`, `stands` (tårne), `nextStandId`, `kills` (nedlagt vildt), `hunts` (jagter, `createdBy`), `chat`, `vagtplan`, `kvoter`, `extraAreas` (tegnede arealer), `positions` (delt GPS mens man er tjekket ind), `activity`, `adminMsg`.
+`members`, `stands` (tårne), `nextStandId`, `kills` (nedlagt vildt), `hunts` (jagter, `createdBy`), `chat`, `vagtplan`, `kvoter`, `extraAreas` (tegnede arealer), `positions` (delt GPS mens man er tjekket ind), `activity`, `adminMsg`, `feeders` (foderpladser/vildtkameraer: interval i dage, `last`, `log`), `alerts` (nødalarmer, `active`). Tårne har `dir` (skudretning i grader, 0 = nord).
 **Ikke i databasen:** "Mine andre jagter" (private jagter) ligger kun i telefonens localStorage under `pj_<brugernavn>` – uden app-præfiks, fordi begge apps ligger på samme domæne; så ser brugeren sine private jagter i begge apps. Må aldrig sendes til Firebase.
 Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 
@@ -40,6 +43,8 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 7. **Faste arealer i koden** (Nord-/Sydstykket i pixel-koordinater) passede ikke. Arealer tegnes nu kun i appen og ligger i `extraAreas`. Læg ikke koordinater i koden.
 8. **Ikke vise placeringen før `cancelPlace()`** – `placingStand` er `null` bagefter.
 9. Stille fejl ved gemning: tjek altid `r.ok` på fetch. En afvisning fra databasen (401/403) = Firebase **Rules** forkerte/udløbet ("test mode" udløber efter 30 dage).
+11. **Tårn-felter forsvandt**: flere steder skrev tårne som `{id,name,lat,lng,booking}` og smed andre felter væk (fx `dir`). Tilføj nye felter alle steder der skriver `stands/`.
+12. Tests der læser tekst skal bruge `textContent`, ikke `innerText` – overskrifter er versaler via CSS.
 10. Testede ikke på rigtig skærm med iPhone-kanter → knapper kunne ikke trykkes. Kør `test_layout.py` efter enhver layoutændring.
 
 ## Sådan arbejder vi
@@ -56,6 +61,7 @@ Engangs-flag: `cleanedDefaults` (kun Trustrup), `pwReset2026` (kun Dystrup).
 - 24-10-2026: Alt overført til Dystrup med eget logo (råbukhoved). Nord-/Sydstykket fjernet; arealer tegnes på ny. Alle Dystrup-koder nulstillet én gang.
 - 25-10-2026: Denne fil + testpakke lagt i begge repos.
 - 25-10-2026: "Mine andre jagter" (🔒 Mine under Jagter): private jagter kun på telefonen, advarsel ved overlap med fællesjagter/egne jagter, farver i kalender, spørger ved tilmelding på optaget dag. Test: `test_private.py`.
+- 25-10-2026: Vind ved tårne (skudretning + grøn/gul/rød + sektorer på kort), jagttider (forside + egen side + advarsel ved registrering), offline-kort, nødknap (SOS til alle med position, banner, stop), foderpladser & vildtkameraer (kort, påmindelse, log). Test: `test_v2.py`.
 
 ## Idéer / ikke lavet endnu
 

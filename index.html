@@ -155,6 +155,24 @@ nav::-webkit-scrollbar{display:none;}
 .quick-btn.primary{background:var(--gold);border-color:var(--gold);color:#111311;}
 .quick-btn svg{width:24px;height:24px;}
 .hm{background:#4ea3ff;color:#fff;border:2px solid #fff;border-radius:14px;font:700 11px Barlow,sans-serif;padding:3px 7px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5);}
+
+/* v2: vind, jagttid, offline, SOS, foder */
+.wd{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:5px;border:1.5px solid rgba(0,0,0,.45);vertical-align:middle;}
+.w-g{background:#3ddc84}.w-y{background:#ffd23f}.w-r{background:#ff5c5c}.w-n{background:#888}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--bg2);border:1px solid var(--border);color:var(--text2);margin:0 6px 6px 0;}
+.pill.on{background:rgba(61,220,132,.12);border-color:#3ddc84;color:#b9f5d2;}
+.pill.soon{background:rgba(255,210,63,.1);border-color:#ffd23f;color:#ffe9a3;}
+.sos-btn{width:100%;padding:14px;border-radius:16px;border:2px solid #ff3b3b;background:rgba(255,59,59,.12);color:#ff8c8c;font-family:var(--fp),sans-serif;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;margin-bottom:12px;min-height:52px;}
+#sos-banner{display:none;position:fixed;left:0;right:0;top:calc(52px + var(--sat));z-index:2600;background:#c81e1e;color:#fff;padding:12px max(14px,env(safe-area-inset-left,0px)) 12px max(14px,env(safe-area-inset-right,0px));box-shadow:0 6px 24px rgba(0,0,0,.5);}
+#sos-banner .sb-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+#sos-banner button{flex:1;min-width:110px;min-height:44px;border-radius:12px;border:0;font:700 14px var(--fl),sans-serif;cursor:pointer;}
+#map-sos{position:absolute;bottom:24px;left:12px;z-index:1000;min-width:48px;min-height:48px;border-radius:12px;border:2px solid #ff3b3b;background:rgba(17,19,17,.9);color:#ff6b6b;font:700 13px var(--fp),sans-serif;letter-spacing:1px;cursor:pointer;}
+.fm{background:#1d211d;border:2px solid #78b478;border-radius:10px;padding:2px 6px;font:700 11px var(--fl),sans-serif;color:#e8ebe6;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5);}
+.fm.due{border-color:#ff5c5c;}
+.am{background:#c81e1e;color:#fff;border:2px solid #fff;border-radius:14px;padding:4px 8px;font:700 12px var(--fl),sans-serif;white-space:nowrap;animation:sosPulse 1.2s ease-in-out infinite;}
+@keyframes sosPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,59,.7)}50%{box-shadow:0 0 0 12px rgba(255,59,59,0)}}
+.off-prog{height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-top:6px;}
+.off-prog span{display:block;height:100%;width:0;background:var(--gold);transition:width .2s;}
 </style>
 </head>
 <body>
@@ -216,8 +234,19 @@ nav::-webkit-scrollbar{display:none;}
         <div style="border-top:1px solid var(--border);margin:6px 0 4px;"></div>
         <div class="lr"><input type="checkbox" id="c4" checked><label for="c4"><div class="ld" style="background:rgba(200,60,160,.5);border:2px solid #a010a0;border-radius:50%;"></div> Jagtareal</label></div>
         <div class="lr"><input type="checkbox" id="c5" checked><label for="c5"><div class="ld" style="background:#4a90d9;border-radius:50%;"></div> Min position</label></div>
+        <div class="lr"><input type="checkbox" id="c6" checked><label for="c6"><div class="ld" style="background:rgba(61,220,132,.4);border:2px solid #3ddc84;"></div> Skudretning &amp; vind</label></div>
+        <div class="lr"><input type="checkbox" id="c7" checked><label for="c7"><div class="ld" style="background:#1d211d;border:2px solid #78b478;"></div> Foder &amp; kameraer</label></div>
         <div id="area-btns" style="margin-top:4px;display:flex;flex-direction:column;gap:4px;"></div>
         <button onclick="startDrawNewArea()" style="width:100%;margin-top:5px;padding:7px;background:rgba(255,122,26,.1);border:1px dashed rgba(255,122,26,.4);border-radius:8px;color:var(--gold);font-size:11px;cursor:pointer;">＋ Nyt areal</button>
+        <button onclick="openFeeder()" style="width:100%;margin-top:5px;padding:7px;background:rgba(120,180,120,.1);border:1px dashed rgba(120,180,120,.5);border-radius:8px;color:#a8d8a8;font-size:11px;cursor:pointer;">＋ Foderplads / kamera</button>
+        <div style="border-top:1px solid var(--border);margin:8px 0 4px;"></div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:.5px;">OFFLINE-KORT</div>
+        <div id="off-status" style="font-size:11px;color:var(--text2);margin:3px 0;">Ikke gemt</div>
+        <div class="off-prog" id="off-prog" style="display:none;"><span></span></div>
+        <div style="display:flex;gap:4px;margin-top:5px;">
+          <button id="off-btn" onclick="saveOfflineMap()" style="flex:1;padding:7px;background:var(--gold);border:none;border-radius:8px;color:#111311;font-size:11px;font-weight:700;cursor:pointer;">⬇ Gem kortet</button>
+          <button onclick="clearOfflineMap()" aria-label="Slet offline-kort" style="padding:7px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;cursor:pointer;">🗑</button>
+        </div>
       </div>
     </div>
     <div id="area-bar">
@@ -236,6 +265,7 @@ nav::-webkit-scrollbar{display:none;}
       </div>
     </div>
     <button id="findme-btn" onclick="findMe()">📍</button>
+    <button id="map-sos" onclick="sosPress()" aria-label="Nødknap">SOS</button>
   </div>
 </div>
 
@@ -303,6 +333,19 @@ nav::-webkit-scrollbar{display:none;}
 </div>
 
 <!-- KVOTER -->
+<div class="view" id="v-foder">
+  <div class="view-header">
+    <h2>🌾 Foder &amp; kameraer</h2>
+    <button class="btn-add" onclick="openFeeder()">＋ Tilføj</button>
+  </div>
+  <div class="view-inner" id="foder-list"></div>
+</div>
+
+<div class="view" id="v-jagttider">
+  <div class="view-header"><h2>📆 Jagttider</h2></div>
+  <div class="view-inner" id="jagttid-list"></div>
+</div>
+
 <div class="view" id="v-kvoter">
   <div class="view-header">
     <h2>🦌 Kvoter</h2>
@@ -377,6 +420,8 @@ nav::-webkit-scrollbar{display:none;}
     <button class="more-btn" id="tab-chat" onclick="showView('chat');closeMore()" style="position:relative;"><span style="font-size:26px;display:block;margin-bottom:4px;">💬</span><span style="font-size:10px;">Chat</span></button>
     <button class="more-btn" id="tab-vagt" onclick="showView('vagt');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">📋</span><span style="font-size:10px;">Vagtplan</span></button>
     <button class="more-btn" id="tab-kvoter" onclick="showView('kvoter');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">🦌</span><span style="font-size:10px;">Kvoter</span></button>
+    <button class="more-btn" id="tab-foder" onclick="showView('foder');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">🌾</span><span style="font-size:10px;">Foder &amp; kamera</span></button>
+    <button class="more-btn" id="tab-jagttider" onclick="showView('jagttider');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">📆</span><span style="font-size:10px;">Jagttider</span></button>
     <button class="more-btn" id="tab-stat" onclick="showView('stat');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">📊</span><span style="font-size:10px;">Statistik</span></button>
     <button class="more-btn" id="tab-admin" style="display:none;" onclick="showView('admin');closeMore()"><span style="font-size:26px;display:block;margin-bottom:4px;">👑</span><span style="font-size:10px;">Admin</span></button>
   </div>
@@ -458,11 +503,47 @@ nav::-webkit-scrollbar{display:none;}
   <button id="pj-del" onclick="deletePrivate()" style="display:none;width:100%;margin-top:10px;padding:12px;background:var(--red2);border:1px solid var(--red);border-radius:12px;color:#f4d0d0;font-size:14px;cursor:pointer;">🗑 Slet</button>
 </div></div>
 
+<!-- Foderplads / kamera -->
+<div class="overlay" id="fd-modal">
+<div class="modal">
+  <h3 id="fd-title">🌾 Foderplads / kamera</h3>
+  <div class="field"><label>Navn</label><input type="text" id="fd-name" placeholder="F.eks. Majsfoder ved mosen"></div>
+  <div class="field"><label>Type</label>
+    <select id="fd-type"><option value="foder">🌾 Foderplads</option><option value="kamera">📷 Vildtkamera</option><option value="salt">🧂 Saltsten</option><option value="andet">📍 Andet</option></select>
+  </div>
+  <div class="field"><label>Påmind mig hver … dag</label><input type="number" id="fd-every" min="1" max="120" value="7" inputmode="numeric"></div>
+  <div class="field"><label>Note</label><input type="text" id="fd-note" placeholder="Hvad skal der til, hvor ligger nøglen…"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" onclick="saveFeeder()">✓ Gem</button>
+    <button class="btn btn-q" onclick="closeModal('fd-modal')">Annuller</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="fd-act">
+<div class="modal">
+  <h3 id="fa-title">🌾</h3>
+  <div id="fa-body" style="font-size:14px;color:var(--text2);margin-bottom:14px;"></div>
+  <div class="modal-btns">
+    <button class="btn btn-g" id="fa-done">✓ Fodret nu</button>
+    <button class="btn btn-q" onclick="closeModal('fd-act')">Luk</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:10px;">
+    <button id="fa-move" style="flex:1;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text2);font-size:14px;cursor:pointer;">📍 Flyt</button>
+    <button id="fa-edit" style="flex:1;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text2);font-size:14px;cursor:pointer;">✏️ Ret</button>
+    <button id="fa-del" style="flex:1;padding:12px;background:var(--red2);border:1px solid var(--red);border-radius:12px;color:#f4d0d0;font-size:14px;cursor:pointer;">🗑 Slet</button>
+  </div>
+</div></div>
+
+<div id="sos-banner" role="alert"></div>
+
 <!-- Torn navn modal -->
 <div class="overlay" id="Tårne-edit-modal">
 <div class="modal">
   <h3>✏️ Rediger torn</h3>
   <div class="field"><label>Navn</label><input type="text" id="te-name" placeholder="Torn navn..."></div>
+  <div class="field"><label>Skudretning (hvor du kigger hen)</label>
+    <select id="te-dir"><option value="">Ikke sat</option><option value="0">Nord</option><option value="45">Nordøst</option><option value="90">Øst</option><option value="135">Sydøst</option><option value="180">Syd</option><option value="225">Sydvest</option><option value="270">Vest</option><option value="315">Nordvest</option></select>
+  </div>
   <div class="modal-btns">
     <button class="btn btn-g" onclick="saveTårnedit()">✓ Gem</button>
     <button class="btn btn-q" onclick="closeModal('Tårne-edit-modal')">Annuller</button>
@@ -837,6 +918,388 @@ function renderMine(){
   el.innerHTML=html;
 }
 
+
+// ══ V2: VIND · JAGTTIDER · OFFLINE · SOS · FODER ══════════════
+const HOME=[56.3466,10.7802];
+const DIRS=['N','NØ','Ø','SØ','S','SV','V','NV'];
+const dirName=d=>DIRS[Math.round(((d%360)+360)%360/45)%8];
+
+// ── Vind ved tårne ──
+let WIND=null, sectorLayer=null;
+async function fetchWind(force){
+  try{ const c=JSON.parse(localStorage.getItem('tj_wind')||'null'); if(!force&&c&&Date.now()-c.ts<20*60000){ WIND=c; return; } }catch(e){}
+  try{
+    const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),7000);
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+HOME[0]+'&longitude='+HOME[1]+'&current=wind_direction_10m,wind_speed_10m&hourly=wind_direction_10m,wind_speed_10m&wind_speed_unit=ms&timezone=Europe%2FCopenhagen&forecast_days=2',{signal:ctrl.signal});
+    if(!r.ok) return;
+    const d=await r.json();
+    WIND={from:d.current.wind_direction_10m,speed:d.current.wind_speed_10m,ts:Date.now(),
+      hours:(d.hourly.time||[]).map((t,i)=>({t,from:d.hourly.wind_direction_10m[i],speed:d.hourly.wind_speed_10m[i]}))};
+    try{ localStorage.setItem('tj_wind',JSON.stringify(WIND)); }catch(e){}
+  }catch(e){}
+}
+function windRating(dir,from,speed){
+  if(dir==null||dir===''||from==null) return null;
+  if(speed!=null&&speed<1) return {c:'y',t:'Næsten vindstille – vinden kan skifte'};
+  const down=(from+180)%360;               // hvor duften driver hen
+  let diff=Math.abs(down-dir)%360; if(diff>180) diff=360-diff;
+  if(diff<=45) return {c:'r',t:'Dårlig vind – duften driver ud over skudfeltet'};
+  if(diff<=100) return {c:'y',t:'Sidevind – kan gå'};
+  return {c:'g',t:'God vind – vinden kommer fra skudfeltet'};
+}
+function standWind(s){ return WIND?windRating(s.dir,WIND.from,WIND.speed):null; }
+function windAt(hour){
+  if(!WIND||!WIND.hours) return null;
+  const now=new Date(), ds=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  return WIND.hours.find(h=>h.t===ds+'T'+String(hour).padStart(2,'0')+':00')||null;
+}
+function windDot(s){ const w=standWind(s); return w?'<span class="wd w-'+w.c+'"></span>':''; }
+function windSummaryHtml(){
+  const placed=stands.filter(s=>s.lat&&s.dir!=null&&s.dir!=='');
+  if(!WIND) return '';
+  let h='<div class="card"><div class="card-title">💨 Vind ved tårnene</div>';
+  h+='<div style="font-size:14px;margin-bottom:8px;">Nu: fra <b>'+dirName(WIND.from)+'</b> · '+(Math.round(WIND.speed*10)/10).toString().replace('.',',')+' m/s <span style="display:inline-block;transform:rotate('+(WIND.from+180)+'deg);">↑</span></div>';
+  if(!placed.length){ h+='<div style="font-size:13px;color:var(--text3);">Sæt skudretning på tårnene (✏️ under Tårne), så viser appen om vinden er god.</div></div>'; return h; }
+  const eve=windAt(17), hr=new Date().getHours();
+  placed.forEach(s=>{
+    const w=standWind(s), we=eve&&hr<17?windRating(s.dir,eve.from,eve.speed):null;
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border2);">'+
+       '<span class="wd w-'+w.c+'" style="margin:0"></span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;">'+esc(s.name)+' <span style="color:var(--text3);font-weight:400;font-size:12px;">skyder mod '+dirName(s.dir)+'</span></div>'+
+       '<div style="font-size:12px;color:var(--text3);">'+w.t+'</div></div>'+
+       (we?'<div style="font-size:11px;color:var(--text3);text-align:right;">kl. 17<br><span class="wd w-'+we.c+'" style="margin:0"></span></div>':'')+'</div>';
+  });
+  return h+'</div>';
+}
+function sectorPoly(lat,lng,dir,r,half){
+  const pts=[[lat,lng]], R=6371000;
+  for(let a=dir-half;a<=dir+half;a+=6){
+    const b=a*Math.PI/180, d=r/R, la=lat*Math.PI/180, lo=lng*Math.PI/180;
+    const la2=Math.asin(Math.sin(la)*Math.cos(d)+Math.cos(la)*Math.sin(d)*Math.cos(b));
+    const lo2=lo+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la),Math.cos(d)-Math.sin(la)*Math.sin(la2));
+    pts.push([la2*180/Math.PI,lo2*180/Math.PI]);
+  }
+  return pts;
+}
+function redrawSectors(){
+  if(!map||!sectorLayer) return;
+  sectorLayer.clearLayers();
+  const col={g:'#3ddc84',y:'#ffd23f',r:'#ff5c5c'};
+  stands.filter(s=>s.lat&&s.dir!=null&&s.dir!=='').forEach(s=>{
+    const w=standWind(s), c=w?col[w.c]:'#bbbbbb';
+    L.polygon(sectorPoly(s.lat,s.lng,+s.dir,220,30),{color:c,weight:1.5,fillColor:c,fillOpacity:.18,interactive:false}).addTo(sectorLayer);
+  });
+  if(WIND){
+    const c=map.getCenter();
+    const ic=L.divIcon({className:'',html:'<div style="background:rgba(17,19,17,.85);border:1px solid var(--border);border-radius:10px;padding:3px 7px;font:600 11px Barlow,sans-serif;color:#e8ebe6;white-space:nowrap;">💨 '+dirName(WIND.from)+' '+Math.round(WIND.speed)+' m/s</div>',iconAnchor:[0,0]});
+  }
+}
+async function refreshWind(force){
+  await fetchWind(force);
+  stands.forEach(s=>updMarker(s)); redrawSectors();
+  if(document.getElementById('v-Tårne').classList.contains('active')) renderTårne();
+  if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard();
+}
+
+// ── Jagttider (BEK 470/2024 – generelle + lokale for Djursland/Region Midtjylland) ──
+const JT=[
+ ['Råbuk',[['05-16','07-15'],['10-01','01-31']]],
+ ['Rå og rålam',[['10-01','01-31']]],
+ ['Kronhjort (større end spidshjort)',[['10-01','11-30']]],
+ ['Kronspidshjort',[['09-01','01-31']]],
+ ['Kronhind',[['10-01','01-31']]],
+ ['Kronkalv',[['09-01','02-29']]],
+ ['Dåhjort',[['09-01','01-31']]],
+ ['Då og dåkalv',[['10-01','01-31']]],
+ ['Sikahjort',[['09-01','01-31']]],
+ ['Sikahind og -kalv',[['10-01','01-31']]],
+ ['Vildsvin, orne',[['09-01','01-31']]],
+ ['Vildsvin, so og grise',[['10-01','01-31']]],
+ ['Ræv',[['09-01','01-31']]],
+ ['Hare',[['11-01','01-15']]],
+ ['Vildkanin',[['11-01','01-31']]],
+ ['Fasan',[['10-01','01-31']]],
+ ['Agerhøne',[['09-16','10-15']]],
+ ['Skovsneppe',[['10-01','01-31']]],
+ ['Ringdue',[['11-11','01-31']]],
+ ['Gråand',[['09-01','12-31']]],
+ ['Grågås',[['09-01','01-31']]],
+ ['Krage og husskade',[['09-01','01-31']]]];
+const KILL_JT={'Råbuk':['Råbuk'],'Rå':['Rå og rålam'],'Kronhjort':['Kronhjort (større end spidshjort)','Kronspidshjort','Kronkalv'],'Hind':['Kronhind'],
+  'Dådyr':['Då og dåkalv'],'Dåbuk':['Dåhjort'],'Vildsvin':['Vildsvin, orne','Vildsvin, so og grise'],'Hare':['Hare'],'Fasan':['Fasan'],'Ræv':['Ræv']};
+function mmdd(d){ return d.slice(5,10); }
+function inPeriod(md,p){ return p[0]<=p[1]?(md>=p[0]&&md<=p[1]):(md>=p[0]||md<=p[1]); }
+function jtOpen(name,date){ const e=JT.find(x=>x[0]===name); return !!e&&e[1].some(p=>inPeriod(mmdd(date),p)); }
+function todayStr(){ const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+function addDays(ds,n){ const d=new Date(ds+'T12:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function jtNext(name,from){ // næste dato arten åbner/lukker
+  const open=jtOpen(name,from); for(let i=1;i<=370;i++){ const d=addDays(from,i); if(jtOpen(name,d)!==open) return {d,open:!open}; } return null; }
+function jtPeriodsTxt(e){ return e[1].map(p=>p[0].split('-').reverse().join('/')+'–'+(p[1]==='02-29'?'sidste feb':p[1].split('-').reverse().join('/'))).join(' og '); }
+function jagttidSummaryHtml(){
+  const t=todayStr(), open=JT.filter(e=>jtOpen(e[0],t)), soon=JT.filter(e=>!jtOpen(e[0],t)).map(e=>({e,n:jtNext(e[0],t)})).filter(x=>x.n&&x.n.open&&x.n.d<=addDays(t,21));
+  let h='<div class="card" onclick="showView(\'jagttider\')" style="cursor:pointer;"><div class="card-title">📆 Jagttid i dag</div>';
+  h+=open.length?open.map(e=>'<span class="pill on">'+esc(e[0])+'</span>').join(''):'<div style="font-size:13px;color:var(--text3);">Ingen af de almindelige arter har jagttid i dag.</div>';
+  if(soon.length) h+='<div style="font-size:12px;color:var(--text3);margin:4px 0 6px;">Åbner snart:</div>'+soon.map(x=>'<span class="pill soon">'+esc(x.e[0])+' '+fmtDMY(x.n.d).slice(0,5)+'</span>').join('');
+  return h+'</div>';
+}
+function renderJagttider(){
+  const el=document.getElementById('jagttid-list'); if(!el) return;
+  const t=todayStr();
+  let h='<div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Gælder Djursland (Norddjurs/Syddjurs, Region Midtjylland) efter jagttidsbekendtgørelsen BEK nr. 470 af 17-05-2024. Tjek altid de gældende regler og jeres egne aftaler – fx lokale fredninger og skydetider for kronvildt.</div>';
+  h+=JT.map(e=>{ const o=jtOpen(e[0],t), n=jtNext(e[0],t);
+    return '<div class="card" style="display:flex;align-items:center;gap:10px;padding:12px 14px;"><span class="wd '+(o?'w-g':'w-n')+'" style="margin:0;width:11px;height:11px;"></span>'+
+      '<div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;">'+esc(e[0])+'</div><div style="font-size:12px;color:var(--text3);">'+jtPeriodsTxt(e)+'</div></div>'+
+      '<div style="font-size:12px;text-align:right;color:'+(o?'#b9f5d2':'var(--text3)')+';">'+(o?'Åben':'Lukket')+(n?'<br>'+(n.open?'åbner ':'lukker ')+fmtDMY(n.open?n.d:addDays(n.d,-1)).slice(0,5):'')+'</div></div>'; }).join('');
+  el.innerHTML=h;
+}
+
+// ── Offline-kort ──
+const TILE_CACHE='tiles-v1';
+function offlineBounds(){
+  const pts=[];
+  Object.values(extraAreas||{}).forEach(a=>{ if(a&&a.points) a.points.forEach(p=>pts.push([p.lat,p.lng])); });
+  stands.forEach(s=>{ if(s.lat) pts.push([s.lat,s.lng]); });
+  Object.values(DB.feeders||{}).filter(Boolean).forEach(f=>{ if(f.lat) pts.push([f.lat,f.lng]); });
+  let b=pts.length?L.latLngBounds(pts):map.getBounds();
+  if(pts.length===1) b=b.pad(3);
+  return b.pad(0.25);
+}
+function lon2x(lon,z){ return Math.floor((lon+180)/360*Math.pow(2,z)); }
+function lat2y(lat,z){ const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); }
+function tileUrls(b){
+  const urls=[];
+  BASES[aktivBase].lag.forEach(l=>{
+    const o=l.options, subs=typeof o.subdomains==='string'?o.subdomains.split(''):(o.subdomains||['a']);
+    const zmax=Math.min(17,o.maxNativeZoom||o.maxZoom||17);
+    for(let z=11;z<=zmax;z++){
+      const x0=lon2x(b.getWest(),z), x1=lon2x(b.getEast(),z), y0=lat2y(b.getNorth(),z), y1=lat2y(b.getSouth(),z);
+      for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++)
+        urls.push(L.Util.template(l._url,L.extend({},o,{s:subs[Math.abs(x+y)%subs.length],x,y,z,r:L.Browser.retina?'@2x':''})));
+    }
+  });
+  return urls;
+}
+function offStatus(){
+  const el=document.getElementById('off-status'); if(!el) return;
+  try{ const m=JSON.parse(localStorage.getItem('tj_offline')||'null');
+    el.textContent=m?(m.name+' gemt '+m.date+' ('+m.count+' felter)'):'Ikke gemt – kortet virker kun med signal';
+  }catch(e){ el.textContent='Ikke gemt'; }
+}
+let offBusy=false;
+async function saveOfflineMap(){
+  if(offBusy) return;
+  if(!('caches' in window)){ toast('Din telefon kan ikke gemme kort offline'); return; }
+  if(!map){ toast('Åbn kortet først'); return; }
+  let urls=tileUrls(offlineBounds());
+  if(urls.length>3000){ toast('Området er for stort – tegn arealer eller zoom ind'); return; }
+  offBusy=true;
+  const btn=document.getElementById('off-btn'), pr=document.getElementById('off-prog'), bar=pr.querySelector('span');
+  btn.textContent='Henter…'; pr.style.display='';
+  const cache=await caches.open(TILE_CACHE); let done=0, ok=0, i=0;
+  async function worker(){
+    while(i<urls.length){
+      const u=urls[i++];
+      try{
+        let hit=await cache.match(u);
+        if(!hit){ let r; try{ r=await fetch(u,{mode:'cors'}); }catch(e){ r=await fetch(u,{mode:'no-cors'}); }
+          if(r&&(r.ok||r.type==='opaque')){ await cache.put(u,r); hit=true; } }
+        if(hit) ok++;
+      }catch(e){}
+      done++; bar.style.width=Math.round(done/urls.length*100)+'%';
+    }
+  }
+  await Promise.all([worker(),worker(),worker(),worker(),worker(),worker()]);
+  offBusy=false; btn.textContent='⬇ Gem kortet'; pr.style.display='none';
+  try{ localStorage.setItem('tj_offline',JSON.stringify({name:BASES[aktivBase].navn,date:fmtDMY(todayStr()),count:ok})); }catch(e){}
+  offStatus();
+  toast(ok===urls.length?'✅ Kortet er gemt – virker nu uden signal':'⚠️ '+ok+' af '+urls.length+' felter gemt – prøv igen med bedre forbindelse',4000);
+}
+async function clearOfflineMap(){
+  try{ await caches.delete(TILE_CACHE); localStorage.removeItem('tj_offline'); }catch(e){}
+  offStatus(); toast('Offline-kort slettet');
+}
+
+// ── Nødknap (SOS) ──
+let ALERTS={}, alertMarkers={}, seenAlerts=null, myAlertId=null, lastAlertPos=0;
+function sosPress(){
+  if(myAlertId){ showSosBanner(); return; }
+  showConfirm('Send NØDALARM til alle i appen med din position?\n\nVed livsfare: ring 112.',sendSOS);
+}
+async function sendSOS(){
+  toast('📍 Finder position…');
+  const p=await getPosOnce();
+  const id='a_'+Date.now();
+  const a={id,user:currentUser,ts:Date.now(),active:true,lat:p?p.lat:null,lng:p?p.lng:null,acc:p?Math.round(p.acc||0):null};
+  const ok=await fbWrite('alerts/'+id,a);
+  if(ok===false){ toast('⚠️ Alarmen kunne ikke sendes – ring 112 eller ring direkte til de andre',6000); return; }
+  myAlertId=id; ALERTS[id]=a; try{ localStorage.setItem('tj_myalert',id); }catch(e){}
+  logActivity('🆘 '+currentUser+' sendte nødalarm');
+  if('vibrate' in navigator) navigator.vibrate([300,100,300]);
+  showSosBanner(); drawAlerts();
+}
+async function stopSOS(id){
+  const a=ALERTS[id]; if(!a) return;
+  a.active=false; a.stoppedBy=currentUser; a.stoppedTs=Date.now();
+  await fbWrite('alerts/'+id,a);
+  if(id===myAlertId){ myAlertId=null; try{ localStorage.removeItem('tj_myalert'); }catch(e){} }
+  logActivity(currentUser+' stoppede nødalarm ('+a.user+')');
+  showSosBanner(); drawAlerts(); toast('✅ Alarm stoppet');
+}
+function activeAlerts(){ return Object.values(ALERTS||{}).filter(a=>a&&a.active&&Date.now()-a.ts<8*3600000); }
+function showSosBanner(){
+  const el=document.getElementById('sos-banner'); if(!el) return;
+  const act=activeAlerts();
+  if(!act.length){ el.style.display='none'; return; }
+  const a=act.sort((x,y)=>y.ts-x.ts)[0], mine=a.user===currentUser;
+  const mins=Math.max(0,Math.round((Date.now()-a.ts)/60000));
+  el.innerHTML='<div style="font:700 18px var(--fp),sans-serif;text-transform:uppercase;letter-spacing:.5px;">🆘 '+(mine?'Din nødalarm er sendt':esc(a.user)+' har brug for hjælp')+'</div>'+
+    '<div style="font-size:13px;opacity:.95;">'+(mins?'for '+mins+' min siden':'lige nu')+(a.lat?'':' · ingen position')+(act.length>1?' · '+act.length+' alarmer':'')+' · Ved livsfare: ring 112</div>'+
+    '<div class="sb-row">'+(a.lat?'<button onclick="showAlertOnMap(\''+a.id+'\')" style="background:#fff;color:#c81e1e;">📍 Vis på kort</button>':'')+
+    (mine||isAdmin()?'<button onclick="stopSOS(\''+a.id+'\')" style="background:#7a0f0f;color:#fff;">'+(mine?'Jeg er OK – stop':'Stop alarm')+'</button>':'')+'</div>';
+  el.style.display='';
+}
+function showAlertOnMap(id){ const a=ALERTS[id]; showView('kort'); setTimeout(()=>{ if(map&&a&&a.lat) map.setView([a.lat,a.lng],16); },300); }
+function drawAlerts(){
+  if(!map) return;
+  const act=activeAlerts(), ids=new Set(act.map(a=>a.id));
+  Object.keys(alertMarkers).forEach(id=>{ if(!ids.has(id)){ map.removeLayer(alertMarkers[id]); delete alertMarkers[id]; } });
+  act.forEach(a=>{ if(!a.lat) return;
+    const ic=L.divIcon({className:'',html:'<div class="am">🆘 '+esc(a.user)+'</div>',iconAnchor:[30,14]});
+    if(alertMarkers[a.id]) alertMarkers[a.id].setLatLng([a.lat,a.lng]);
+    else alertMarkers[a.id]=L.marker([a.lat,a.lng],{icon:ic,zIndexOffset:2000}).addTo(map); });
+}
+function handleAlerts(d){
+  ALERTS=d||{};
+  const act=activeAlerts();
+  if(seenAlerts===null){ seenAlerts=new Set(Object.keys(ALERTS)); }
+  else act.forEach(a=>{ if(!seenAlerts.has(a.id)){ seenAlerts.add(a.id); if(a.user!==currentUser){ notify('🆘 NØDALARM',a.user+' har brug for hjælp – åbn appen'); if('vibrate' in navigator) navigator.vibrate([500,200,500,200,500]); } } });
+  if(myAlertId&&ALERTS[myAlertId]&&!ALERTS[myAlertId].active){ myAlertId=null; try{ localStorage.removeItem('tj_myalert'); }catch(e){} }
+  showSosBanner(); drawAlerts();
+}
+function pollAlerts(){ fetch(FB+'/alerts.json').then(r=>r.ok?r.json():null).then(d=>handleAlerts(d)).catch(()=>{}); }
+function updateMyAlertPos(){
+  if(!myAlertId||!lastPos||Date.now()-lastAlertPos<30000) return;
+  const a=ALERTS[myAlertId]; if(!a||!a.active) return;
+  lastAlertPos=Date.now(); a.lat=lastPos.lat; a.lng=lastPos.lng; a.acc=Math.round(lastPos.acc||0);
+  fbWrite('alerts/'+myAlertId,a);
+}
+
+// ── Foderpladser & vildtkameraer ──
+let feederLayer=null, feederMarkers={}, placingFeeder=null, editingFeeder=null;
+const FD_ICON={foder:'🌾',kamera:'📷',salt:'🧂',andet:'📍'}, FD_DONE={foder:'Fodret',kamera:'Tjekket',salt:'Lagt ud',andet:'Tilset'};
+function feeders(){ return Object.values(DB.feeders||{}).filter(f=>f&&f.id); }
+function fdDue(f){ // dage til næste (negativ = over tid)
+  if(!f.last) return -1;
+  const d=Math.round((new Date(addDays(f.last,f.every||7)+'T12:00:00')-new Date(todayStr()+'T12:00:00'))/86400000);
+  return d;
+}
+function fdStatus(f){ const d=fdDue(f);
+  if(!f.last) return {t:'Ikke registreret endnu',c:'var(--gold)',due:true};
+  if(d<0) return {t:Math.abs(d)+' dag'+(d===-1?'':'e')+' over tid',c:'#ff8c8c',due:true};
+  if(d===0) return {t:'Skal gøres i dag',c:'var(--gold)',due:true};
+  return {t:'Om '+d+' dag'+(d===1?'':'e'),c:'#b9f5d2',due:false}; }
+function openFeeder(id){
+  const f=id?DB.feeders[id]:null; editingFeeder=f?id:null;
+  document.getElementById('fd-title').textContent=f?'✏️ Ret '+f.name:'🌾 Foderplads / kamera';
+  document.getElementById('fd-name').value=f?f.name:'';
+  document.getElementById('fd-type').value=f?f.type:'foder';
+  document.getElementById('fd-every').value=f?f.every:7;
+  document.getElementById('fd-note').value=f?(f.note||''):'';
+  closeModal('fd-act'); openModal('fd-modal');
+}
+async function saveFeeder(){
+  const name=document.getElementById('fd-name').value.trim();
+  if(!name){ toast('Skriv et navn'); return; }
+  const type=document.getElementById('fd-type').value, every=Math.max(1,Math.min(120,parseInt(document.getElementById('fd-every').value)||7));
+  const note=document.getElementById('fd-note').value.trim();
+  if(!DB.feeders) DB.feeders={};
+  if(editingFeeder){
+    const f=DB.feeders[editingFeeder]; Object.assign(f,{name,type,every,note});
+    await fbWrite('feeders/'+f.id,f); closeModal('fd-modal'); afterFeederChange(); toast('✅ Gemt'); return;
+  }
+  const id='f_'+Date.now();
+  const f={id,name,type,every,note,lat:null,lng:null,last:null,lastBy:null,log:[],createdBy:currentUser};
+  DB.feeders[id]=f; await fbWrite('feeders/'+id,f);
+  closeModal('fd-modal'); startPlaceFeeder(id);
+}
+function startPlaceFeeder(id){
+  placingFeeder=id; showView('kort');
+  setTimeout(()=>{ document.getElementById('mb').style.display='block'; document.getElementById('mb-name').textContent=DB.feeders[id].name; if(map) map.getContainer().style.cursor='crosshair'; },200);
+  toast('Tryk på kortet hvor den står');
+}
+async function placeFeederAt(latlng){
+  const f=DB.feeders[placingFeeder]; placingFeeder=null;
+  document.getElementById('mb').style.display='none'; if(map) map.getContainer().style.cursor='';
+  if(!f) return;
+  f.lat=latlng.lat; f.lng=latlng.lng; await fbWrite('feeders/'+f.id,f);
+  afterFeederChange(); toast('✅ '+f.name+' placeret');
+}
+async function feederDone(id){
+  const f=DB.feeders[id]; if(!f) return;
+  f.last=todayStr(); f.lastBy=currentUser;
+  f.log=[{d:f.last,u:currentUser}].concat(Array.isArray(f.log)?f.log.filter(Boolean):[]).slice(0,30);
+  await fbWrite('feeders/'+id,f);
+  logActivity(currentUser+': '+FD_DONE[f.type||'foder'].toLowerCase()+' '+f.name);
+  closeModal('fd-act'); afterFeederChange(); toast('✅ '+FD_DONE[f.type||'foder']+' – næste gang om '+(f.every||7)+' dage');
+}
+function deleteFeeder(id){
+  const f=DB.feeders[id]; if(!f) return;
+  if(!(isAdmin()||f.createdBy===currentUser)){ toast('Kun den der oprettede den, eller admin, kan slette'); return; }
+  closeModal('fd-act');
+  showConfirm('Slet '+f.name+'?',async()=>{ delete DB.feeders[id]; await fbWrite('feeders/'+id,null); afterFeederChange(); toast('Slettet'); });
+}
+function openFeederAct(id){
+  const f=DB.feeders[id]; if(!f) return; const st=fdStatus(f);
+  document.getElementById('fa-title').textContent=(FD_ICON[f.type]||'📍')+' '+f.name;
+  const log=(Array.isArray(f.log)?f.log.filter(Boolean):[]).slice(0,5).map(l=>fmtDMY(l.d)+' · '+esc(l.u)).join('<br>');
+  document.getElementById('fa-body').innerHTML='<div style="color:'+st.c+';font-weight:700;margin-bottom:6px;">'+st.t+'</div>'+
+    'Hver '+(f.every||7)+'. dag'+(f.note?'<br>📌 '+esc(f.note):'')+(log?'<div style="margin-top:10px;font-size:12px;color:var(--text3);">Seneste:<br>'+log+'</div>':'');
+  document.getElementById('fa-done').textContent='✓ '+FD_DONE[f.type||'foder']+' nu';
+  document.getElementById('fa-done').onclick=()=>feederDone(id);
+  document.getElementById('fa-edit').onclick=()=>openFeeder(id);
+  document.getElementById('fa-move').onclick=()=>{ closeModal('fd-act'); startPlaceFeeder(id); };
+  document.getElementById('fa-del').onclick=()=>deleteFeeder(id);
+  openModal('fd-act');
+}
+function feederRow(f){
+  const st=fdStatus(f);
+  return '<div class="card" style="display:flex;align-items:center;gap:10px;"><div style="font-size:24px;">'+(FD_ICON[f.type]||'📍')+'</div>'+
+    '<div style="flex:1;min-width:0;" onclick="openFeederAct(\''+f.id+'\')"><div style="font-size:15px;font-weight:700;">'+esc(f.name)+'</div>'+
+    '<div style="font-size:12px;color:'+st.c+';">'+st.t+'</div>'+
+    '<div style="font-size:11px;color:var(--text3);">'+(f.last?FD_DONE[f.type||'foder']+' '+fmtDMY(f.last)+' af '+esc(f.lastBy||'?'):'')+(f.lat?'':' · ⚠️ ikke placeret')+'</div></div>'+
+    '<button onclick="feederDone(\''+f.id+'\')" style="padding:10px 12px;min-height:44px;background:var(--green2);border:1px solid var(--green);border-radius:10px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer;">✓ '+FD_DONE[f.type||'foder']+'</button></div>';
+}
+function renderFeeders(){
+  const el=document.getElementById('foder-list'); if(!el) return;
+  const list=feeders().sort((a,b)=>fdDue(a)-fdDue(b));
+  el.innerHTML=list.length?list.map(feederRow).join(''):'<div class="empty">Ingen foderpladser eller kameraer endnu.<br>Tryk ＋ Tilføj og sæt den på kortet.</div>';
+}
+function feederSummaryHtml(){
+  const due=feeders().filter(f=>fdStatus(f).due).sort((a,b)=>fdDue(a)-fdDue(b));
+  if(!due.length) return '';
+  return '<div class="card"><div class="card-title" onclick="showView(\'foder\')" style="cursor:pointer;">🌾 Skal tilses</div>'+due.slice(0,4).map(f=>{ const st=fdStatus(f);
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border2);"><span>'+(FD_ICON[f.type]||'📍')+'</span><div style="flex:1;min-width:0;font-size:14px;">'+esc(f.name)+'<div style="font-size:12px;color:'+st.c+';">'+st.t+'</div></div>'+
+      '<button onclick="feederDone(\''+f.id+'\')" style="padding:8px 10px;min-height:40px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:12px;font-weight:700;cursor:pointer;">✓ '+FD_DONE[f.type||'foder']+'</button></div>'; }).join('')+'</div>';
+}
+function drawFeeders(){
+  if(!map||!feederLayer) return;
+  feederLayer.clearLayers(); feederMarkers={};
+  feeders().filter(f=>f.lat).forEach(f=>{
+    const ic=L.divIcon({className:'',html:'<div class="fm'+(fdStatus(f).due?' due':'')+'">'+(FD_ICON[f.type]||'📍')+' '+esc(f.name.substring(0,12))+'</div>',iconAnchor:[20,12]});
+    const m=L.marker([f.lat,f.lng],{icon:ic}).addTo(feederLayer); m.on('click',()=>openFeederAct(f.id)); feederMarkers[f.id]=m; });
+}
+function afterFeederChange(){
+  drawFeeders();
+  if(document.getElementById('v-foder').classList.contains('active')) renderFeeders();
+  if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard();
+}
+function feederReminders(){
+  const t=todayStr();
+  feeders().filter(f=>fdStatus(f).due&&f.last).forEach(f=>{
+    const k='tj_fdnote_'+f.id; let last=null; try{ last=localStorage.getItem(k); }catch(e){}
+    if(last!==t){ try{ localStorage.setItem(k,t); }catch(e){} notify('🌾 '+f.name,fdStatus(f).t); }
+  });
+}
+
 // ── UTILS ────────────────────────────────────────────────────────
 function toast(msg, dur=2500){
   document.querySelectorAll('.toast-el').forEach(t=>t.remove());
@@ -936,7 +1399,7 @@ function populateArrays(){
   const incoming = Object.values(DB.stands||{}).filter(Boolean);
   incoming.forEach(s=>{
     const ex = stands.find(e=>e.id===s.id);
-    if(ex){ ex.name=s.name; ex.lat=s.lat; ex.lng=s.lng; ex.booking=s.booking; }
+    if(ex){ ex.name=s.name; ex.lat=s.lat; ex.lng=s.lng; ex.booking=s.booking; ex.dir=s.dir??null; }
     else stands.push({...s, marker:null});
   });
   stands = stands.filter(s=>incoming.find(i=>i.id===s.id));
@@ -999,6 +1462,7 @@ function registerSW(){
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(r=>{swReg=r;}).catch(()=>{}); }
 }
 function afterLogin(){
+  try{ myAlertId=localStorage.getItem('tj_myalert'); }catch(e){}
   registerSW(); setTimeout(updateNotifyBtn,0);
   var crown = isAdmin()?' 👑':'';
   document.getElementById('user-badge').textContent='👤 '+currentUser+crown;
@@ -1047,7 +1511,8 @@ async function initFirebase(){
     if(dbR && dbR.ok){
       const d = await dbR.json();
       const dd=(d && typeof d==='object')?d:{};
-      ['stands','kills','hunts','members','chat','vagtplan','kvoter'].forEach(k=>{ DB[k]=dd[k]||{}; });
+      ['stands','kills','hunts','members','chat','vagtplan','kvoter','feeders'].forEach(k=>{ DB[k]=dd[k]||{}; });
+      handleAlerts(dd.alerts||{});
       DB.activity=dd.activity||[]; DB.nextStandId=dd.nextStandId||null;
       if(!dd.cleanedDefaults){
         const st=DB.stands||{}; let removed=0;
@@ -1175,9 +1640,12 @@ const aStyle={color:'#aa18a0',weight:2.5,fillColor:'#dd60cc',fillOpacity:0.28};
 let ag;
 function initMapLayers(){
   ag=L.featureGroup().addTo(map);
+  sectorLayer=L.layerGroup().addTo(map); feederLayer=L.layerGroup().addTo(map);
+  setTimeout(()=>{ redrawSectors(); drawFeeders(); drawAlerts(); offStatus(); },100);
   map.setView([56.3466,10.7802],14);
 
   map.on('click',function(e){
+    if(placingFeeder){ placeFeederAt(e.latlng); return; }
     if(drawingNewArea){ drawNewAreaClick(e); return; }
     if(editingArea){ return; }
     if(!placingStand) return;
@@ -1192,6 +1660,8 @@ function initMapLayers(){
     toast('✅ '+pn+' placeret!');
   });
 
+  document.getElementById('c6').addEventListener('change',function(){ this.checked?sectorLayer.addTo(map):map.removeLayer(sectorLayer); });
+  document.getElementById('c7').addEventListener('change',function(){ this.checked?feederLayer.addTo(map):map.removeLayer(feederLayer); });
   document.getElementById('c4').addEventListener('change',function(){ this.checked?ag.addTo(map):map.removeLayer(ag); });
   document.getElementById('c5').addEventListener('change',function(){
     if(this.checked) startGPS();
@@ -1259,7 +1729,7 @@ function mkIcon(s, active){
   const bk=s.booking;
   const defName='Torn '+s.id;
   const label=s.name&&s.name!==defName?s.name.substring(0,14):String(s.id);
-  return L.divIcon({className:'',html:'<div class="tm'+(bk?' bk':'')+(active?' sel':'')+'">'+label+'</div>',iconAnchor:[20,15]});
+  return L.divIcon({className:'',html:'<div class="tm'+(bk?' bk':'')+(active?' sel':'')+'">'+label+windDot(s)+'</div>',iconAnchor:[20,15]});
 }
 
 function updMarker(s){
@@ -1281,7 +1751,7 @@ function placeTorn(id){
 }
 
 function cancelPlace(){
-  placingStand=null;
+  placingStand=null; placingFeeder=null;
   document.getElementById('mb').style.display='none';
   if(map) map.getContainer().style.cursor='';
 }
@@ -1302,7 +1772,7 @@ function startGPS(){
 function gpsPos(pos){
   const lat=pos.coords.latitude, lng=pos.coords.longitude;
   lastPos={lat,lng,acc:pos.coords.accuracy,ts:Date.now()};
-  sharePosition();
+  sharePosition(); updateMyAlertPos();
   if(!map) return;
   if(!gpsMarker){
     const ic=L.divIcon({className:'',html:'<div style="position:relative;width:20px;height:20px;"><div style="position:absolute;inset:-8px;background:rgba(74,144,217,.2);border-radius:50%;animation:gpsPulse 2s ease-out infinite;"></div><div style="position:absolute;inset:0;background:#4a90d9;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div></div>',iconSize:[20,20],iconAnchor:[10,10]});
@@ -1530,6 +2000,8 @@ function showView(v){
   if(v==='kvoter'){ renderKvoter(); if(isAdmin()) document.getElementById('kvote-add-btn').style.display=''; }
   if(v==='stat') renderStats();
   if(v==='admin') loadAndRenderAdmin();
+  if(v==='foder') renderFeeders();
+  if(v==='jagttider') renderJagttider();
   if(v==='kort'){
     if(!map){
       initMap();
@@ -1635,6 +2107,10 @@ function renderDashboard(){
   const mine=stands.find(s=>s.booking&&s.booking.hunter===currentUser);
   h+='<div class="quick-row"><button class="quick-btn primary" onclick="openKillModal()"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v4M12 18v4M2 12h4M18 12h4\"/></svg>Meld nedlagt</button>'+
     '<button class="quick-btn" onclick="quickCheckin()"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 21L10 9M17 21L14 9M6 9h12M8 4h8l1 5H7z\"/></svg>'+(mine?'Tjek ud':'Tjek ind')+'</button></div>';
+  h+='<button class="sos-btn" onclick="sosPress()">🆘 Nødknap</button>';
+  h+=jagttidSummaryHtml();
+  h+=windSummaryHtml();
+  h+=feederSummaryHtml();
   h+=kvoteSummaryHtml();
   const occ=stands.filter(s=>s.booking);
   const free=stands.filter(s=>s.lat&&!s.booking);
@@ -1778,7 +2254,8 @@ function renderTårne(){
     return '<div class="card"><div style="display:flex;align-items:center;gap:10px;">'+
       '<div style="width:40px;height:40px;background:'+(bk?'var(--pink)':'var(--gold)')+';color:var(--bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;">'+s.id+'</div>'+
       '<div style="flex:1;"><div style="font-size:15px;font-weight:700;color:var(--text);">'+s.name+'</div>'+
-      '<div style="font-size:12px;color:'+(bk?'var(--pink)':'var(--green)')+';">'+(bk?'🔴 '+bk.hunter+(bk.time?' kl.'+bk.time:''):s.lat?'🟢 Ledig':'⚠️ Ikke placeret')+'</div></div>'+
+      '<div style="font-size:12px;color:'+(bk?'var(--pink)':'var(--green)')+';">'+(bk?'🔴 '+bk.hunter+(bk.time?' kl.'+bk.time:''):s.lat?'🟢 Ledig':'⚠️ Ikke placeret')+'</div>'+
+      (s.dir!=null&&s.dir!==''?'<div style="font-size:12px;color:var(--text3);">'+windDot(s)+' Skyder mod '+dirName(s.dir)+(standWind(s)?' · '+standWind(s).t.split(' – ')[0]:'')+'</div>':(isAdmin()?'<div style="font-size:11px;color:var(--text3);">Sæt skudretning med ✏️</div>':''))+'</div>'+
       btns+'</div></div>';
   }).join('');
 }
@@ -1808,6 +2285,7 @@ function openTårneEdit(id){
   if(!s) return;
   editingStandId=id;
   document.getElementById('te-name').value=s.name;
+  document.getElementById('te-dir').value=(s.dir==null?'':String(s.dir));
   openModal('Tårne-edit-modal');
 }
 
@@ -1817,12 +2295,14 @@ async function saveTårnedit(){
   const name=document.getElementById('te-name').value.trim();
   if(!name){toast('Skriv et navn');return;}
   s.name=name;
-  DB.stands[s.id]=s;
+  const dv=document.getElementById('te-dir').value; s.dir=dv===''?null:parseInt(dv);
+  DB.stands[s.id]={...s,marker:undefined};
+  redrawSectors();
   updMarker(s);
   await fbWrite('stands/'+s.id,s);
   closeModal('Tårne-edit-modal');
   renderTårne();
-  toast('✅ Navn gemt');
+  toast('✅ Gemt');
 }
 
 async function deleteStand(id){
@@ -1880,7 +2360,7 @@ async function doCheckin(){
     s.booking=null;
     DB.stands[s.id]=s;
     stopSharing();
-    await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,booking:null});
+    await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,dir:(s.dir??null),booking:null});
     updMarker(s);
     renderTårne();
     closeModal('checkin-modal');
@@ -1890,7 +2370,7 @@ async function doCheckin(){
     s.booking={hunter:currentUser,time};
     DB.stands[s.id]=s;
     getPosOnce().then(()=>sharePosition(true));
-    await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,booking:{hunter:currentUser,time}});
+    await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,dir:(s.dir??null),booking:{hunter:currentUser,time}});
     updMarker(s);
     if('vibrate' in navigator) navigator.vibrate([100,50,100]);
     renderTårne();
@@ -1902,7 +2382,7 @@ async function doCheckin(){
 
 async function saveOneSt(s){
   DB.stands[s.id]={...s,marker:undefined};
-  await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,booking:s.booking||null});
+  await fbWrite('stands/'+s.id,{id:s.id,name:s.name,lat:s.lat,lng:s.lng,dir:(s.dir??null),booking:s.booking||null});
 }
 
 // ── SKYDELOG ─────────────────────────────────────────────────────
@@ -1932,6 +2412,9 @@ async function saveKill(){
       r.onload=()=>res(r.result);
       r.readAsDataURL(photoFile);
     });
+  }
+  if(!editingKillId&&KILL_JT[animal]&&date&&!KILL_JT[animal].some(n=>jtOpen(n,date))){
+    if(!confirm(animal+' har ikke jagttid d. '+fmtDMY(date)+' (Djursland). Registrér alligevel?')) return;
   }
   if(!editingKillId){
     const kv=Object.values(DB.kvoter||{}).find(q=>q&&q.animal===animal&&date>=seasonRange(q.saeson)[0]&&date<=seasonRange(q.saeson)[1]);
@@ -2544,12 +3027,19 @@ window.addEventListener('resize', function(){
 });
 
 function startPolling(){
+  setInterval(pollAlerts,6000);
+  setInterval(()=>refreshWind(true),20*60000);
+  refreshWind(false);
+  setTimeout(feederReminders,4000);
   checkNews('chat',DB.chat); checkNews('hunts',DB.hunts); checkNews('kills',DB.kills);
   setInterval(function(){
     Promise.all([fetch(FB+'/hunts.json').then(r=>r.ok?r.json():null).catch(()=>null),
                  fetch(FB+'/kills.json').then(r=>r.ok?r.json():null).catch(()=>null),
-                 fetch(FB+'/positions.json').then(r=>r.ok?r.json():null).catch(()=>null)]).then(function(res){
-      var hd=res[0], kd=res[1], pd=res[2];
+                 fetch(FB+'/positions.json').then(r=>r.ok?r.json():null).catch(()=>null),
+                 fetch(FB+'/feeders.json').then(r=>r.ok?r.json():null).catch(()=>null)]).then(function(res){
+      var hd=res[0], kd=res[1], pd=res[2], fd=res[3];
+      if(JSON.stringify(fd||{})!==JSON.stringify(DB.feeders||{})){ DB.feeders=fd||{}; afterFeederChange(); }
+      feederReminders();
       if(hd&&JSON.stringify(hd)!==JSON.stringify(DB.hunts)){ checkNews('hunts',hd); DB.hunts=hd; populateArrays();
         if(document.getElementById('v-jagt').classList.contains('active')) renderHunts();
         if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard(); }
@@ -2582,12 +3072,13 @@ function startPolling(){
       if(!d) return;
       DB.stands=d;
       var wasChanged=false;
-      Object.values(d).forEach(function(s){
+      Object.values(d).filter(Boolean).forEach(function(s){
         var ex=stands.find(function(e){return e.id===s.id;});
-        if(ex&&JSON.stringify(ex.booking)!==JSON.stringify(s.booking)){
-          ex.booking=s.booking; updMarker(ex); wasChanged=true;
+        if(ex&&(JSON.stringify(ex.booking)!==JSON.stringify(s.booking)||(ex.dir??null)!==(s.dir??null))){
+          ex.booking=s.booking; ex.dir=s.dir??null; updMarker(ex); wasChanged=true;
         }
       });
+      if(wasChanged) redrawSectors();
       if(wasChanged){
         if(document.getElementById('v-Tårne').classList.contains('active')) renderTårne();
         if(document.getElementById('v-hjem').classList.contains('active')) renderDashboard();
